@@ -1,0 +1,35 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                                                                 %
+%%%%%     <file_name>.tex                                             %
+%%%%%                                                                 %
+%%%%% Author:      <author>                                           %
+%%%%% Created:     <date>                                             %
+%%%%% Description: <description>                                      %
+%%%%%                                                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction}
+
+\section{Heterogeneous systems}
+	Heterogeneous Systems, relies on different accelerators to achieve the bbest possible efficiency. Most of them are composed of one Genereal Purpose Core and one or multiple Programmable Many Core Accelerator (PCMA). These systems are interesting because of their energy efficiency, the accelerators are designed to compute a lot of data in parallel, and the host allow for more flexibility and handle the program flow.
+
+	Hero is an heterogeneous system developped by the IIS (ETHZ) and the EEES (University of Bologna). This platform is composed of a hard multicore ARM 64 Juno SOC and one pulp cluster (eight RI5CY cores), running on an FPGA. During my project, I used this target to port Halide.
+
+\section {Design Issue with heterogeneous systems}
+		Due to their heterogeneous nature, those systems are difficult to program. The compilation process is complex, requiering multiple passes on different toolchains to distribute the work to the host and the accelerator, and to allocate the memory. And this complexity is alsso forced on the end user, as he needs to know the target perfectly to make use of all the available resources.
+
+\section { Currently Available Workflow for Halide}
+	Currently Hero support OpenMp, which is an API which "defines a portable, scalable model with a simple and flexible interface for developing parallel applications on platforms from the desktop to the supercomputer" (Ref: OpenMP website). This API has been implemented on hero, and is currently used to develop some test application.
+	But exploring the design space using OpenMp's directive, isn't perfect, and require the developper to adapt it's code to run with a specific schedule. This approach leads to an important developpement time but also an extensive texting process whenever the schedule is changed to ensure that the resulting code works as intended.
+
+	Halide is a programming language that was designed to allow the developper to explore multiple design choices quickly by separating the algorithm from the execution schedule. This language was designed to be used in image or array processing applications.
+	Every processing pipeline designed with Halide have two parts. Teh first part consist of the functionnal description of the processing kernel, this is the algorithm that will be executed on the arry. And the second part is the schedule of the pipeline. This schedule describe how the algorithm will be executed on the system. This programming model is interesting because the developper can in the first time implement the algorithm without having to take into account the boundaries of the functions or the border effects. Then he can quickly bound the different variables of the pipeline and design it's schedule afterwards. All the constraints will be asserted during the compilation without any intervention from the developper.
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "../report_template"
+%%% End: 
