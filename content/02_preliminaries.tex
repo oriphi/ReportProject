@@ -50,26 +50,31 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 
 	\subsection{Debugging Options}
 
-	\subsection { Basic Scheduling Options}
+	\subsection {Basic Scheduling Options}
 	\label{section:scheduling}
-	Non Architecture specific Schedule
+	Halide implement different scheduling instruction, and most of them aren't architecture specific. 
+	\subsubsection{Non Architecture Specific Instrutions}
 	\begin{itemize}
-		\item Reorder
-		\item Split
-		\item Tile
-		\item Fuse
-		\item Unroll
+		\item Reorder : Tells halide how to traverse the domain of the pipeline stage (ffor example in a column major or row major way)
+		\item Split   : Split a dimension along inner and outer subdimensions.
+		\item Tile    : Cut the domain in tiles.
+		\item Fuse    : Join two dimensions in a single fused dimension.
+		\item Unroll  : Unroll along one dimension.
 	\end{itemize}
-	Architecture specific Schedule
-	\begin{itemize}
-		\item Vectorize
-		\item Parallel
 
-	\end{itemize}
+	Some of the primitives such as vectorize or parallel. needs to be implemented on the target platform as they take advantage of the specificities of the system. To do so Halide uses some functions which are defined in a header file we can get when compiling the pipeline.
 
 	\subsection { Porting Halide to new Platforms}
+		From the header file, we can find the functions vital for halide to work and implement them in the pulp runtime. From then, we have to compile the pipeline to a risc-V object file, and then compile the main application using this object file and the provided header. When we will compile the final application using the hero toolchain, the linker will link the halide function calls to the implemented functions in the pulp runtime.
+		Currently, only the memory allocation, print, and fork primitive are implemented but they are sufficient to try some basic parallel schdeules.
 
 \section{Compilation Workflow}
+	Hero currently have different platforms, and also different workflow. I started by working on the simulation platform which simulate an eight-core pulp cluster. Then I tried to port it to the hardware platform (One hard ARM core and a PULP cluster implemented on the FPGA). The compilation is slightly different for both platform, so I started by working on the simulation platform which is not heterogeneous.
+\section{Simulation}
+	The compilation process for the simulation platform is quite easy,  we start by compiling the C++ code which will generate the final pipeline, we then run this application, to generate the pipeline and the matching header file.
+	Then we compile the true application which will call the pipeline. During the process, we add the object file of the pipeline in the source file, g++ will then link the pipeline with the main application and also the halide calls to the pulp runtime functions.
+		
+\section{The full hero platform}
 
 %%% Local Variables: 
 %%% mode: latex
