@@ -15,8 +15,57 @@
 
 \section{Halide Language}
 	\subsection { Programing model}
+		Halide is a functionnal program embedded into C++ designed to write high performance image and array processing code (Halide Website). This language uses a functionnal paradigm to describe the functionnalities of the pipeline. The scheduling of the pipeline is described separately, which allow the developper to explore a wide range of schedule without having to rewrite most of the code. 
+		Every pipeline is a function (\verb|Halide::Func| composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code snippet 
+		%\ref{code:simple_pipeline} 
+		describe a basic pipeline which compute the distance of each coordinate of the array from on position specified by the vector %(\texttt{  (center_x, center_y)   }).
 
-	\subsection { Available Functionnalities}
+
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
+\begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b, label={code:simple_pipeline}]
+Halide::Var x, y;
+Halide::Param center_x, center_y;
+Halide::Expr offset = Halide::pow(x - center_x, 2) 
+                      + Halide::pow(y - center_y, 2);
+
+	gradient(x, y) = offset;
+\end{lstlisting}
+
+	After designing the  pipeline, we can define it's schedule via the different directive included in Halide. Halide implements all the basic scheduling option like parallelizing, unrolling, splitting ... These options will be described in the section 
+	\nameref{section:scheduling}
+	. The snippet 
+	\ref{code:simple_pipeline_schedule} 
+	shows a simple schedule applied on our gradient. This schedule consists of parallelizing the execution over the \texttt{x} axis, and unrolling along the  \texttt{y} axis.
+
+	\begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b,label={code:simple_pipeline_schedule}];
+	gradient.parallel(x);
+	gradient.unroll(y, 10);
+	\label{code:simple_pipeline_schedule}
+	\end{lstlisting}
+
+
+	To execute our pipeline, Halide provides a large range of options, we can execute it directly using the \verb|.realize(x_max, y_max)| directive, this will execute the pipeline on a rectangle starting from it's top left corner in  \verb|(0,0)| to it's bottom right corner in \verb|(x_max, y_max)|.
+	
+	But Halide also gives the programmer a lot off options to execute the pipeline, it's able to convert the code to C code, llvm assembly file, or already compiled object file specific to a given target. More over, Halide support a wire variety of CPU architecture (X86, ARM, MIPS, PowerPc, Risc-V  ), operating systems ( Linux, Windows, Android, Mac) and also Gpu Api's (Cuda, OpenCL, OpenGl, DirectX ...). Halide support for new architecture is getting better and better, and is by design targeted for cross compilation and Heterogeneous systems.
+
+	\subsection{Debugging Options}
+
+	\subsection { Basic Scheduling Options}
+	\label{section:scheduling}
+	Non Architecture specific Schedule
+	\begin{itemize}
+		\item Reorder
+		\item Split
+		\item Tile
+		\item Fuse
+		\item Unroll
+	\end{itemize}
+	Architecture specific Schedule
+	\begin{itemize}
+		\item Vectorize
+		\item Parallel
+
+	\end{itemize}
 
 	\subsection { Porting Halide to new Platforms}
 
