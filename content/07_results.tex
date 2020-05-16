@@ -12,5 +12,8 @@
 
 \chapter{Results}
 \section{Test Setup}
+	I benchmarked two applications on two platforms. I benchmarked the halide port  on the hardware simulation for the PULP cluste, and one openMp matrix multiplication application on the developpement platform on a Xilinx ZCU102. For both application, I generated random matrices of différent sizes, and for each sizes multiplication I counted the number of cycles needed to complete the operation. 
+	With this setup, we can easily compare the performances of halide and OpenMp in a real world scenario for at least two basic schedules: Single threaded and Multi Threaded.
+	To give the results a more meaning I also calculated the number of operations per cycles where one operation can either be an addition a multiplication or a memory access (which take 2 cycles each), so for a matrix of size n, the number of operations to finish the multiplication is : $6 * n ** 3 + n ** 2$ (each coefficient needs $2n$ memory accesses, $2n$ additions and multiplications and one memory store).
 
 \section{Comparaison between OpenMp and Halide on the different platforms}

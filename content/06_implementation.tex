@@ -12,8 +12,30 @@
 
 
 \chapter{Design Implementation}
-\section{Matrix Multiplication}
+	To test halide on hero, I used two benchmark. The first one was a basic gradient example, and the second one a matrix multiplication pipeline that I took in the provided examples and then adapted to be used in a hero application.
+The matrix axample is more interesting, because it represent what a typical signal processing application may do. It is also quite easy to benchmark with different sizes to see the impact of the memory access on the execution time.
+
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
+\begin{lstlisting}[caption={Matrix Multiplication Pipeline}, captionpos=b, label={code:matmul_pipeline}]
+    ImageParam A(type_of<int>(), 2);
+    ImageParam B(type_of<int>(), 2);
+    Var x, y;
+    Func matrix_mul("matrix_mul");
+    Func out;
+
+    RDom k( 0,A.width() );
+
+    matrix_mul(x, y) += A(x, k) * B(k, y);
+
+    out(x, y) = matrix_mul(x, y);
+
+\end{lstlisting}
+
 \section{Schedule Implementation }
+	Most of the schedules implemented on halide doesn't require any platform specific implementation as they are only unrolling, splitting or swapping loops. During my project I used two platform specific schedules: vectorization and parallelization.
+	The \verb|.vectorize(x)| instrucion unrolls one loop in assembly, and the vectorization is done by g++ using the SIMD instructions of the chip. For hero, the simd extention wasn't supported by g++ but, we could still use this instructions as it reduced the number of jumps and thus the total execution time.
+
+	The \verb|.parallel(x)| instructions uses two functions: \verb|halide_do_par_for| and \verb|halide_do_par_for_fork|. \verb|halide_do_par_for| adds the tasks to the task queue of the pulp cluster, every task will execute  \verb|halide_do_par_for_fork| on the corresponding core (if the core id is equal to the task number modulo the number of available cores). Every task consist of a part of the processing pipeline.
 %\begin{figure}[tb]
 %  \centering
 %  \includegraphics[width=\linewidth]{./figures/tb}

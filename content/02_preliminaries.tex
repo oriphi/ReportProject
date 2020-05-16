@@ -40,7 +40,6 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 	\begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b,label={code:simple_pipeline_schedule}];
 	gradient.parallel(x);
 	gradient.unroll(y, 10);
-	\label{code:simple_pipeline_schedule}
 	\end{lstlisting}
 
 
@@ -75,6 +74,7 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 	Then we compile the true application which will call the pipeline. During the process, we add the object file of the pipeline in the source file, g++ will then link the pipeline with the main application and also the halide calls to the pulp runtime functions.
 		
 \section{The full hero platform}
+	The hardware platform has a more complex compiling process, currently, the applications use OpenMp to distribute the code to the pulp cluster. With instructions such as \verb| #pragma omp target device(BIGPULP_MEMCPY) | to  explicitely tell the compiler to distribute the following part of the code to the pulp cluster. The application is compiled using Clang and a the clang-offlad bundler to create an heterogeneous application that will run on both platform.
 
 %%% Local Variables: 
 %%% mode: latex
