@@ -15,10 +15,10 @@
 
 \section{Halide Language}
 	\subsection { Programing model}
-		Halide is a functionnal program embedded into C++ designed to write high performance image and array processing code (Halide Website). This language uses a functionnal paradigm to describe the functionnalities of the pipeline. The scheduling of the pipeline is described separately, which allow the developper to explore a wide range of schedule without having to rewrite most of the code. 
+		Halide is a functionnal program embedded into C++ designed to write high performance image and array processing code \cite{Web:Halide}. This language uses a functionnal paradigm to describe the functionnalities of the pipeline. The scheduling of the pipeline is described separately, which allow the developper to explore a wide range of schedule without having to rewrite most of the code. 
 		Every pipeline is a function (\verb|Halide::Func| composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code snippet 
-		%\ref{code:simple_pipeline} 
-		describe a basic pipeline which compute the distance of each coordinate of the array from on position specified by the vector %(\texttt{  (center_x, center_y)   }).
+		\ref{code:simple_pipeline} 
+		describe a basic pipeline which compute the distance of each coordinate of the array from on position specified by the vector \verb|(center_x, center_y)|.
 
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}

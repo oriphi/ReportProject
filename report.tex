@@ -91,8 +91,8 @@
 \listoftables
 
 % Print list of acronyms.
-%\setlength{\glslistdottedwidth}{0.2\linewidth}
-% \printglossary[type=\acronymtype,style=listdotted,title=List of Acronyms]
+\setlength{\glslistdottedwidth}{0.2\linewidth}
+\printglossary[type=\acronymtype,style=listdotted,title=List of Acronyms]
 
 
 %%%%%
@@ -127,7 +127,7 @@
 % Print the bibliography.
 \nocite*{} % Print non-cited references as well.
 \bibliographystyle{IEEEtran}
-\bibliography{IEEEabrv,./bib/main}
+\bibliography{IEEEabrv,./bib/main.bib}
 
 
 \end{document}
