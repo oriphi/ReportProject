@@ -12,13 +12,13 @@
 
 \chapter{Preliminaries / Background}
 \section{Hero}
-
 \section{Halide Language}
 	\subsection { Programing model}
-		Halide is a functionnal program embedded into C++ designed to write high performance image and array processing code \cite{Web:Halide}. This language uses a functionnal paradigm to describe the functionnalities of the pipeline. The scheduling of the pipeline is described separately, which allow the developper to explore a wide range of schedule without having to rewrite most of the code. 
-		Every pipeline is a function (\verb|Halide::Func| composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code snippet 
-		\ref{code:simple_pipeline} 
-		describe a basic pipeline which compute the distance of each coordinate of the array from on position specified by the vector \verb|(center_x, center_y)|.
+		Halide is a functionnal programming language,  embedded into C++ designed to write high performance image and array processing code \cite{Web:Halide}. This language uses a functionnal paradigm to describe the functionnalities of the processing pipeline. The code of the algorithm is separated from how it will be implemented on the  target (schedule). 
+
+
+		Every pipeline is a function (\verb|Halide::Func| composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code snippet~\ref{code:simple_pipeline} 
+		describe a basic pipeline which compute the distance of each coordinate of a two-dimentionnal array from on position specified by the vector \verb|(center_x, center_y)|.
 
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
@@ -30,12 +30,11 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 
 	gradient(x, y) = offset;
 \end{lstlisting}
+	This simple pipeline only has one stage, but it is possible to create multiple stage pipeline and transform it into a single stage inlined pipeline or keep it's multi stage structure, this operation will be done during the scheduling phase.
 
-	After designing the  pipeline, we can define it's schedule via the different directive included in Halide. Halide implements all the basic scheduling option like parallelizing, unrolling, splitting ... These options will be described in the section 
-	\nameref{section:scheduling}
-	. The snippet 
-	\ref{code:simple_pipeline_schedule} 
-	shows a simple schedule applied on our gradient. This schedule consists of parallelizing the execution over the \texttt{x} axis, and unrolling along the  \texttt{y} axis.
+	After designing the  pipeline, we can define it's schedule via the different directive included in Halide. Halide implements all the basic scheduling option like parallelizing, unrolling the loops, splitting one loop into an inner and an outer loop... These options will be described in the section~\nameref{section:scheduling}. 
+
+	In the example~\ref{code:simple_pipeline_schedule}, we can see how the scheduling works. All instructions are function of the pipeline object, and the final pipeline will implement these instructions. The example shows a simple schedule applied on our gradient, this schedule consists of parallelizing the execution over the x axis, and unrolling along the y axis.
 
 	\begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b,label={code:simple_pipeline_schedule}];
 	gradient.parallel(x);
@@ -43,15 +42,19 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 	\end{lstlisting}
 
 
-	To execute our pipeline, Halide provides a large range of options, we can execute it directly using the \verb|.realize(x_max, y_max)| directive, this will execute the pipeline on a rectangle starting from it's top left corner in  \verb|(0,0)| to it's bottom right corner in \verb|(x_max, y_max)|.
+	To execute the pipeline, Halide provides a large range of options, we can execute it directly using the \verb|.realize(x_max, y_max)| function, this is useful for debugging purpose, but most of the compile options are targeted at cross-compilation.
 	
-	But Halide also gives the programmer a lot off options to execute the pipeline, it's able to convert the code to C code, llvm assembly file, or already compiled object file specific to a given target. More over, Halide support a wire variety of CPU architecture (X86, ARM, MIPS, PowerPc, Risc-V  ), operating systems ( Linux, Windows, Android, Mac) and also Gpu Api's (Cuda, OpenCL, OpenGl, DirectX ...). Halide support for new architecture is getting better and better, and is by design targeted for cross compilation and Heterogeneous systems.
+	As the initial goal of Halide was to target devices such as CPU, the library is capable of compiling the pipeline to a lot of different platform and output format. Halide support translation to C code, llvm assembly file, or already compiled object file specific to a given target(Cuda, Arm, Risc-V, MIPS, PowerPc...), and a given operating system( Linux, Mac, Windows, Android). The developer can also chose to compile the pipeline to a library to use in another application.
 
-	\subsection{Debugging Options}
+\subsection{Debugging Options}
+	Halide has tools to debug the pipeline during it's compilation or when it is executed. First of all, the \verb|print()| and \verb|print_when()| functions can be called at any time in a pipeline and allow to print values of some variables. Another useful tool is the \verb|.trace_store()| function which prints the value every  functions evaluated in the pipeline. It is possible to get more informations during the compilation of the pipeline by setting the \verb|HL_DEBUG_CODEGEN| to 1, this will output the stages of the compilation and a pseudo code representation of the pipeline.
+	Finally, variables and functions can have a label, which will be used by halide in it's internal representation, this function greatly reduce the debugging time of the schedules as Halide gives every variables a different name from the source code.
+
 
 	\subsection {Basic Scheduling Options}
 	\label{section:scheduling}
-	Halide implement different scheduling instruction, and most of them aren't architecture specific. 
+
+	Halide implement different scheduling instruction, and some of them just reshape the code in a different way. These scheduling instructions are useful to prepare the code for other instrutions (such as parallelization or vectorization), but also to  take advantage of memory locality.
 	\subsubsection{Non Architecture Specific Instrutions}
 	\begin{itemize}
 		\item Reorder : Tells halide how to traverse the domain of the pipeline stage (ffor example in a column major or row major way)
@@ -60,21 +63,25 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 		\item Fuse    : Join two dimensions in a single fused dimension.
 		\item Unroll  : Unroll along one dimension.
 	\end{itemize}
+	These instructions are the basic one, but it is also possible to split the code in arbitrary areas which can have arbitrary shapes and sizes using reduction domains and the \verb|where()| instruction.
 
-	Some of the primitives such as vectorize or parallel. needs to be implemented on the target platform as they take advantage of the specificities of the system. To do so Halide uses some functions which are defined in a header file we can get when compiling the pipeline.
+	Some of the primitives such as vectorize or parallel need to be implemented on the target platform as they take advantage of the specificities of the system. The halide Team doesn't prive a clear guide on how to port the language to a new platform, but using the header generated when building the pipeline, we can get enough information to implement enough functions to port halide to this new platform.
 
 	\subsection { Porting Halide to new Platforms}
-		From the header file, we can find the functions vital for halide to work and implement them in the pulp runtime. From then, we have to compile the pipeline to a risc-V object file, and then compile the main application using this object file and the provided header. When we will compile the final application using the hero toolchain, the linker will link the halide function calls to the implemented functions in the pulp runtime.
-		Currently, only the memory allocation, print, and fork primitive are implemented but they are sufficient to try some basic parallel schdeules.
+		First of all, to compile to a specific platform, we need a build of llvm which support the desired architecture.
+		Then we can look in the pipeline header file to list all the vital functions for our pipeline. We can also use the error message when linking the pipeline to determine which functions we need to implement on the target platform. 
+		Currently only the memory allocation functions, the print functions and the task distribution functions are implemented, and they are enough to  test basic pipelines such as matrix multiplications or light image modifications.
+	After the implementation we can work on the compilation workflow for hero.
 
 \section{Compilation Workflow}
-	Hero currently have different platforms, and also different workflow. I started by working on the simulation platform which simulate an eight-core pulp cluster. Then I tried to port it to the hardware platform (One hard ARM core and a PULP cluster implemented on the FPGA). The compilation is slightly different for both platform, so I started by working on the simulation platform which is not heterogeneous.
-\section{Simulation}
-	The compilation process for the simulation platform is quite easy,  we start by compiling the C++ code which will generate the final pipeline, we then run this application, to generate the pipeline and the matching header file.
-	Then we compile the true application which will call the pipeline. During the process, we add the object file of the pipeline in the source file, g++ will then link the pipeline with the main application and also the halide calls to the pulp runtime functions.
+	Every application has at least two source files, one C++ file which will generate the object file of the pipeline, the main application. 
+	Currently, we can only compile the application to the hardware simulator.
+	The compilation has two phases, during the first one, we compile the Halide application using llvm and run it on the host platform, this application will then generate an risc-V object file and a header.
+	Then we compile the hero application using the already available Makefile, we include the header in the main application and the object file to the sources during the linking command.
+
 		
 \section{The full hero platform}
-	The hardware platform has a more complex compiling process, currently, the applications use OpenMp to distribute the code to the pulp cluster. With instructions such as \verb| #pragma omp target device(BIGPULP_MEMCPY) | to  explicitely tell the compiler to distribute the following part of the code to the pulp cluster. The application is compiled using Clang and a the clang-offlad bundler to create an heterogeneous application that will run on both platform.
+	The hardware platform has a more complex compiling process, currently the code is distributed to the \gls{pulp} thanks to OpenMp. The compilation first generate the llvm representation of the  code, then assign space on the device via \verb|hc-omp-space|, and also \verb|clang-offload-bundler| to distribute generate the llvm assembly code for the right platform. Finally the  program uses clang to compile the application, thanks to the special hero target, clang links every function correctly and then embed the riscV code inside the ARM application.
 
 %%% Local Variables: 
 %%% mode: latex

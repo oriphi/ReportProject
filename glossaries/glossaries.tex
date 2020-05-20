@@ -1,0 +1,51 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                                                                 %
+%%%%%     Make Glossaries                                             %
+%%%%%                                                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Required to generate the index for the glossaries.
+\makeglossaries
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                                                                %
+%%%%%     Definitions of all glossary entries which will appear in   %
+%%%%%     the default (main) glossary.                               %
+%%%%%                                                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\newglossaryentry{monkey}{name=Monkey,description={Lorem ipsum dolor
+%sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor
+%invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea
+%rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem
+%ipsum dolor sit amet}}
+
+
+
+% Add all glossary entries to the glossary, even if they have not been
+% referenced.
+\glsaddall[types={main}]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                                                                %
+%%%%%     Definitions of all acronyms which will appear in the list  %
+%%%%%     of acronyms.                                               %
+%%%%%                                                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newacronym{api}{API}{Application Programming Interface}
+\newacronym{cpu}{CPU}{Central Processing Unit}
+\newacronym{eees}{EEES}{Energy Efficient Embedded Systems}
+\newacronym{iis}{IIS}{Integrated Systems Laboratory}
+\newacronym{isa}{ISA}{Instruction Set Architecture}
+\newacronym{fpga}{FPGA}{Field Programmable Gate Array}
+\newacronym{pcma}{PCMA}{Programmable Many Core Accelerator}
+\newacronym{pulp}{PULP}{Parallel Ultra Low Power}
+\newacronym{soc}{SoC}{System on Chip}
+\newacronym{simd}{SIMD}{Single Instruction Multiple Data}
+\newacronym{mit}{MIT}{Massachusett Institute of Technology}
+
+% Add all acronyms to the list of acronyms even if they have not been
+% referenced.
+\glsaddall[types={\acronymtype}]
