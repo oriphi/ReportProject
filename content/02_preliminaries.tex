@@ -51,21 +51,188 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 	Finally, variables and functions can have a label, which will be used by halide in it's internal representation, this function greatly reduce the debugging time of the schedules as Halide gives every variables a different name from the source code.
 
 
-	\subsection {Basic Scheduling Options}
+	\section {Basic Scheduling Options}
 	\label{section:scheduling}
 
 	Halide implement different scheduling instruction, and some of them just reshape the code in a different way. These scheduling instructions are useful to prepare the code for other instrutions (such as parallelization or vectorization), but also to  take advantage of memory locality.
-	\subsubsection{Non Architecture Specific Instrutions}
-	\begin{itemize}
-		\item Reorder : Tells halide how to traverse the domain of the pipeline stage (ffor example in a column major or row major way)
-		\item Split   : Split a dimension along inner and outer subdimensions.
-		\item Tile    : Cut the domain in tiles.
-		\item Fuse    : Join two dimensions in a single fused dimension.
-		\item Unroll  : Unroll along one dimension.
-	\end{itemize}
-	These instructions are the basic one, but it is also possible to split the code in arbitrary areas which can have arbitrary shapes and sizes using reduction domains and the \verb|where()| instruction.
+\newcommand\EIW{.4\textwidth}
+\newcommand\ECW{\textwidth - \EIW}
+	\subsection{ Non Platform Specific Schedule}
 
-	Some of the primitives such as vectorize or parallel need to be implemented on the target platform as they take advantage of the specificities of the system. The halide Team doesn't prive a clear guide on how to port the language to a new platform, but using the header generated when building the pipeline, we can get enough information to implement enough functions to port halide to this new platform.
+	\subsubsection{Default Schedule}
+
+
+\begin{figure}[h]
+		\begin{minipage}[c]{\EIW}
+			\centering
+		\includegraphics[width=\textwidth]{Images/BaseOrder.png}
+		\end{minipage}
+		\begin{minipage}[c]{\ECW}
+			\centering
+			\begin{lstlisting}[label={code:reorder}];
+	for(int y = 0; y < 4; y++){
+		for(int x = 0; x < 4; x++){
+			do something ...
+		}
+	}
+	
+\end{lstlisting}
+		\end{minipage}
+	\caption{Base Schedule}
+	\label{schedule:default}
+\end{figure}
+
+
+
+	If you don't specify any scheduling instructions, Halide will evaluate the pipeline in order. The first variable being the inner loop, and the last one the outer loop. In figure~\ref{schedule:default}, we can see the schedule in action, the image is processed in a row major fashion.
+
+	\subsubsection{Reorder}
+
+
+\begin{figure}[H]
+
+		\begin{minipage}[c]{\EIW}
+			\centering
+		\includegraphics[width=\textwidth]{Images/Reorder.png}
+		\end{minipage}
+		\begin{minipage}[c]{\ECW}
+			\centering
+\begin{lstlisting}[label={code:reorder}];
+	for(int x = 0; x < 4; x++){
+		for(int y = 0; y < 4; y++){
+			do something on
+			(x,y)
+		}
+	}
+\end{lstlisting}
+		\end{minipage}
+		\caption{Schedule: Reorder}
+		\label{schedule:reorder}
+\end{figure}
+
+
+
+	The reorder instruction tells Halide how to traverse the domain space, using this instruction we can reorder the loops of the pipeline. In the exemple~\ref{schdule:reorder}, we changed the way the array is being processed from row major to column major.
+
+
+
+	\subsubsection{Unroll}
+
+
+\begin{figure}[H]
+		\begin{minipage}[c]{\EIW}
+			\centering
+		\includegraphics[width=\textwidth]{Images/Unroll.png}
+		\end{minipage}
+		\begin{minipage}[c]{\ECW}
+			\centering
+			\begin{lstlisting}[label={code:reorder}];
+	for(int y = 0; y < 4; y++){
+		do something on (0,y)
+		do something on (1,y)
+		do something on (2,y)
+	}
+
+\end{lstlisting}
+		\end{minipage}
+	\caption{Unroll Schedule}
+	\label{schedule:unroll}
+\end{figure}
+	The Unroll schedule unrolls the code along one dimension. This instruction sometimes improve the code execution speed by removing the jumps at the end of each loop. This technique is often used by compilers to optimize the speed of the executable.
+
+\subsubsection{Split}
+
+\begin{figure}[H]
+
+		\begin{minipage}[c]{\EIW}
+			\centering
+		\includegraphics[width=\textwidth]{Images/Split.png}
+		\end{minipage}
+		\begin{minipage}[c]{\ECW}
+			\centering
+			\begin{lstlisting}[label={code:reorder}];
+	for(int y = 0; y < 6; y++){
+		for(int x_o = 0; x_o < 3; x_o++){
+			for(int x_i = 0; x_i < 4; x_i++){
+
+				do something on
+				(x_o * 3 + x_i, y)
+			}
+		}
+	}
+\end{lstlisting}
+		\end{minipage}
+		\caption{Schedule Split}
+\end{figure}
+
+	This schedule replaces one loop over a dimension by two loops, an inner loop and an outer loop. This schedule is useful to cut the array in smaller pieces that will be computed in parallel or using \gls{simd} instructions.
+
+\subsubsection{Tile}
+
+
+\begin{figure}[H]
+
+		\begin{minipage}[c]{\EIW}
+			\centering
+		\includegraphics[width=\textwidth]{Images/Tile.png}
+		\end{minipage}
+		\begin{minipage}[c]{\ECW}
+			\centering
+			\begin{lstlisting}[label={code:reorder}];
+	for(int y_o = 0; y_o < 6; y_o++){
+		for(int x_o = 0; x_o < 3; x_o++){
+			for(int y_i = 0; y_i < 2; y_i++){
+				for(int x_i = 0; x_i < 2; x_i++){
+					do something on
+					(x_o * 2 + x_i, y_o * 2 + y_i)
+				}
+			}
+		}
+	}
+\end{lstlisting}
+		\end{minipage}
+		\caption{Schedule Tile}
+\end{figure}
+	The Tile schedule is similar to the Split schedule, but along two dimensions. It creates multiples smaller rectangles which can be processed independantly.
+
+	\subsection{Platform Specific Schedules}
+\subsubsection{Parallel}
+\begin{figure}[H]
+
+		\begin{minipage}[c]{\EIW}
+			\centering
+		\includegraphics[width=\textwidth]{Images/Parallel.png}
+		\end{minipage}
+		\begin{minipage}[c]{\ECW}
+			\centering
+			\begin{lstlisting}[label={code:reorder}];
+	# Core 0: y = 0
+	for(int x = 0; x < 4; x++){
+		do something on (x,0)
+	}
+
+	# Core 1: y = 1
+	for(int x = 0; x < 4; x++){
+		do something on (x,1)
+	}
+
+	# Core 2: y = 2
+	for(int x = 0; x < 4; x++){
+		do something on (x,2)
+	}
+	}
+\end{lstlisting}
+		\end{minipage}
+		\caption{Schedule Parallel}
+		\label{schedule:parallel}
+\end{figure}
+
+The parallel schedule allows the pipeline to be distributed to all the available cores. Halide will create for task for each value the variable can take, and these tasks will be executed with the \verb|halide_do_par_for| function. This function has been overwritten on hero to execute on the \gls{pulp} cluster. In the example~\ref{schedule:parallel}, the code is distributed on three cores, each of them execute a single loop along the y axis.
+
+	\subsubsection{Vectorize}
+	The goal of this schedule is to setup the code so to make use of the \gls{simd} instructions of the \gls{cpu}. Currently, llvm doesn't support the vector extension  implemented in the pulp cluster, but the generated code will take advantages of all the registers available to compute the output values, ans try to compute multiple values at the same time.
+
+
 
 	\subsection { Porting Halide to new Platforms}
 		First of all, to compile to a specific platform, we need a build of llvm which support the desired architecture.
