@@ -14,12 +14,11 @@
 \section{Hero}
 \section{Halide Language}
 	\subsection { Programing model}
-		Halide is a functionnal programming language,  embedded into C++ designed to write high performance image and array processing code \cite{Web:Halide}. This language uses a functionnal paradigm to describe the functionnalities of the processing pipeline. The code of the algorithm is separated from how it will be implemented on the  target (schedule). 
+		Halide is a functionnal programming language embedded into C++, designed to write high performance image and array processing code~\cite{Web:Halide}. This language uses a functionnal paradigm to describe the the processing pipeline, and disociate the algorithmic code from the it's schedule (how the code will be compiled and run on the system). 
 
 
-		Every pipeline is a function (\verb|Halide::Func| composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code snippet~\ref{code:simple_pipeline} 
-		describe a basic pipeline which compute the distance of each coordinate of a two-dimentionnal array from on position specified by the vector \verb|(center_x, center_y)|.
-
+		Every pipeline is a function (\verb|Halide::Func|) composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code snippet~\ref{code:simple_pipeline} 
+		describe a basic pipeline which compute the distance of each coordinate of a two-dimensional array from on position specified by the vector \verb|(center_x, center_y)|. The creation of the pipeline is straightforward, we have to code the operation we want to execute on every element of the domain (here computing the distance to a given position).
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
 \begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b, label={code:simple_pipeline}]
@@ -30,26 +29,32 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 
 	gradient(x, y) = offset;
 \end{lstlisting}
-	This simple pipeline only has one stage, but it is possible to create multiple stage pipeline and transform it into a single stage inlined pipeline or keep it's multi stage structure, this operation will be done during the scheduling phase.
 
-	After designing the  pipeline, we can define it's schedule via the different directive included in Halide. Halide implements all the basic scheduling option like parallelizing, unrolling the loops, splitting one loop into an inner and an outer loop... These options will be described in the section~\nameref{section:scheduling}. 
 
-	In the example~\ref{code:simple_pipeline_schedule}, we can see how the scheduling works. All instructions are function of the pipeline object, and the final pipeline will implement these instructions. The example shows a simple schedule applied on our gradient, this schedule consists of parallelizing the execution over the x axis, and unrolling along the y axis.
+	This simple pipeline only has one stage, but it is possible to create multi-stage pipelines and schedule them as wanted. They can be transformed it into a single stage inlined pipeline or kept as is but allowing only the next stage to execute when the previous one has computed all it's value, or allow it to progress as soon as he has the required data at it's disposal.
+
+	After designing the  pipeline, we can define it's schedule via the different directives included in Halide. Halide implements basic scheduling primitives that can be combined to create complex schedules. The primitives consists of basic code transformations such as loop unrolling or reordering, loop splitting or fusing variable together, more advanced instructions like parallelization or vectorization are also available. I will explain their behavior more in detail in the section~\nameref{section:scheduling}.
+
+
+	In the example~\ref{code:simple_pipeline_schedule}, we can see how the scheduling works. All instructions are a function of the pipeline object, they take the variables of the pipeline as argument to specify on which part of the pipeline this schedule will affect. During compilation, Halide will generate the code corresponding to the schedule specified by the programmer (if this schedule is valid).
 
 	\begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b,label={code:simple_pipeline_schedule}];
 	gradient.parallel(x);
 	gradient.unroll(y, 10);
 	\end{lstlisting}
 
+	In the example~\ref{code:simple_pipeline_schedule}, we will create as many task as the value x can take. They will then be distributed on the cores of the system. Every task will execute a single loop over the y axis, which will compute ten elements of the output every iterations (as we specified ten as argument of the \verb|unroll| schedule).
 
-	To execute the pipeline, Halide provides a large range of options, we can execute it directly using the \verb|.realize(x_max, y_max)| function, this is useful for debugging purpose, but most of the compile options are targeted at cross-compilation.
+	The pipeline can be translated or compiled by Halide to be executed directly on the compilation computer or to be used in another application.
+	The function \verb|.realize(x_max, y_max)| is the fastest way to execute the  pipeline, and is useful to debug the algorithm or the schedule. As halide was designed to work with different hardware platform, some of them being low power, cross compilation has been simplified to make the process as simple as possible.
 	
-	As the initial goal of Halide was to target devices such as CPU, the library is capable of compiling the pipeline to a lot of different platform and output format. Halide support translation to C code, llvm assembly file, or already compiled object file specific to a given target(Cuda, Arm, Risc-V, MIPS, PowerPc...), and a given operating system( Linux, Mac, Windows, Android). The developer can also chose to compile the pipeline to a library to use in another application.
+	 Halide support translation to C code, \gls{llvm} assembly file, or already compiled object file specific to a given target(\gls{cuda}, ARM, \gls{riscv}, \gls{mips}, PowerPc...), and a given operating system( Linux, Mac, Windows, Android). The pipeline can also be exported as a static library to use in another application.
 
 \subsection{Debugging Options}
-	Halide has tools to debug the pipeline during it's compilation or when it is executed. First of all, the \verb|print()| and \verb|print_when()| functions can be called at any time in a pipeline and allow to print values of some variables. Another useful tool is the \verb|.trace_store()| function which prints the value every  functions evaluated in the pipeline. It is possible to get more informations during the compilation of the pipeline by setting the \verb|HL_DEBUG_CODEGEN| to 1, this will output the stages of the compilation and a pseudo code representation of the pipeline.
-	Finally, variables and functions can have a label, which will be used by halide in it's internal representation, this function greatly reduce the debugging time of the schedules as Halide gives every variables a different name from the source code.
+	Halide has tools to debug the pipeline during it's compilation or during execution. First of all, the \verb|print()| can be called any time to print a variable, the \verb|print_when()| which print only when one boolean condition is met.
 
+	Another useful tool is the \verb|.trace_store()|, this function keeps a trace of every function evaluation in the pipeline. It is possible to get more informations during the compilation of the pipeline by setting the environemental variable \verb|HL_DEBUG_CODEGEN| to 1, this will output information about every stages of the compilation and a pseudo code representation of the pipeline loops.
+	Finally, variables and functions can have a label, which will be used by halide in it's internal representation or when printing the schedule, this function greatly reduce the debugging time of the schedules as Halide gives every variables a different name from the source code.
 
 	\section {Basic Scheduling Options}
 	\label{section:scheduling}
@@ -98,6 +103,7 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 		\begin{minipage}[c]{\ECW}
 			\centering
 \begin{lstlisting}[label={code:reorder}];
+    pipeline.reorder(y,x);
 	for(int x = 0; x < 4; x++){
 		for(int y = 0; y < 4; y++){
 			do something on
@@ -112,33 +118,34 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 
 
 
-	The reorder instruction tells Halide how to traverse the domain space, using this instruction we can reorder the loops of the pipeline. In the exemple~\ref{schdule:reorder}, we changed the way the array is being processed from row major to column major.
+	The \verb|.reorder| instruction tells Halide how to traverse the domain space, using this instruction we can reorder the loops of the pipeline. In the exemple~\ref{schdule:reorder}, we changed the way the array is being processed from row major to column major.
 
 
-
-	\subsubsection{Unroll}
+	\subsubsection{Fuse}
 
 
 \begin{figure}[H]
+
 		\begin{minipage}[c]{\EIW}
 			\centering
-		\includegraphics[width=\textwidth]{Images/Unroll.png}
+		\includegraphics[width=\textwidth]{Images/BaseOrder.png}
 		\end{minipage}
 		\begin{minipage}[c]{\ECW}
 			\centering
-			\begin{lstlisting}[label={code:reorder}];
-	for(int y = 0; y < 4; y++){
-		do something on (0,y)
-		do something on (1,y)
-		do something on (2,y)
+\begin{lstlisting}[label={code:reorder}];
+    pipeline.fuse(x,y,xy);
+	for(int xy = 0; xy < 9; xy++){
+		do something on
+		(xy)
 	}
-
 \end{lstlisting}
 		\end{minipage}
-	\caption{Unroll Schedule}
-	\label{schedule:unroll}
+		\caption{Schedule: Fused}
+		\label{schedule:fuse}
 \end{figure}
-	The Unroll schedule unrolls the code along one dimension. This instruction sometimes improve the code execution speed by removing the jumps at the end of each loop. This technique is often used by compilers to optimize the speed of the executable.
+
+	The \verb|.fused| instruction  fusestwo dimensions together, transforming a two-dimensionnal array into a one-dimensionnal array. 
+
 
 \subsubsection{Split}
 
@@ -151,6 +158,7 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 		\begin{minipage}[c]{\ECW}
 			\centering
 			\begin{lstlisting}[label={code:reorder}];
+	pipeline.split(x,x_o,x_i, 3);
 	for(int y = 0; y < 6; y++){
 		for(int x_o = 0; x_o < 3; x_o++){
 			for(int x_i = 0; x_i < 4; x_i++){
@@ -179,6 +187,7 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 		\begin{minipage}[c]{\ECW}
 			\centering
 			\begin{lstlisting}[label={code:reorder}];
+	pipeline.split(x,y,x_o,y_o,x_i,y_i,2,2);
 	for(int y_o = 0; y_o < 6; y_o++){
 		for(int x_o = 0; x_o < 3; x_o++){
 			for(int y_i = 0; y_i < 2; y_i++){
@@ -193,9 +202,37 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 		\end{minipage}
 		\caption{Schedule Tile}
 \end{figure}
-	The Tile schedule is similar to the Split schedule, but along two dimensions. It creates multiples smaller rectangles which can be processed independantly.
+	The Tile schedule is similar to the Split schedule, but along two dimensions. It creates multiples smaller rectangles which can be processed independently.
+
+	\subsubsection{Unroll}
+
+
+\begin{figure}[H]
+		\begin{minipage}[c]{\EIW}
+			\centering
+		\includegraphics[width=\textwidth]{Images/Unroll.png}
+		\end{minipage}
+		\begin{minipage}[c]{\ECW}
+			\centering
+			\begin{lstlisting}[label={code:reorder}];
+	pipeline.split(x, x_o,x_i,3);
+	pipeline.unroll(x_i,3);
+	for(int y = 0; y < 4; y++){
+		do something on (0,y)
+		do something on (1,y)
+		do something on (2,y)
+	}
+
+\end{lstlisting}
+		\end{minipage}
+	\caption{Unroll Schedule}
+	\label{schedule:unroll}
+\end{figure}
+	The Unroll schedule unrolls the code along one dimension. This technique is often used when multiple computations share the same data, to prevent multiple memory access. In the example~\ref{schedule:unroll}, we first  split the x dimension before unrolling as Halide can't unroll a variable if it isn't bounded.
+
 
 	\subsection{Platform Specific Schedules}
+
 \subsubsection{Parallel}
 \begin{figure}[H]
 
@@ -206,6 +243,7 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 		\begin{minipage}[c]{\ECW}
 			\centering
 			\begin{lstlisting}[label={code:reorder}];
+	pipeline.parallel(y);
 	# Core 0: y = 0
 	for(int x = 0; x < 4; x++){
 		do something on (x,0)
@@ -230,15 +268,17 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 The parallel schedule allows the pipeline to be distributed to all the available cores. Halide will create for task for each value the variable can take, and these tasks will be executed with the \verb|halide_do_par_for| function. This function has been overwritten on hero to execute on the \gls{pulp} cluster. In the example~\ref{schedule:parallel}, the code is distributed on three cores, each of them execute a single loop along the y axis.
 
 	\subsubsection{Vectorize}
-	The goal of this schedule is to setup the code so to make use of the \gls{simd} instructions of the \gls{cpu}. Currently, llvm doesn't support the vector extension  implemented in the pulp cluster, but the generated code will take advantages of all the registers available to compute the output values, ans try to compute multiple values at the same time.
-
+	The goal of this schedule is to setup the code so to make use of the \gls{simd} instructions of the \gls{cpu}. Currently, \gls{llvm} doesn't support the vector extension  implemented in the pulp cluster, but the generated code will take advantages of all the registers available to compute the output values, ans try to compute multiple values at the same time.
 
 
 	\subsection { Porting Halide to new Platforms}
-		First of all, to compile to a specific platform, we need a build of llvm which support the desired architecture.
-		Then we can look in the pipeline header file to list all the vital functions for our pipeline. We can also use the error message when linking the pipeline to determine which functions we need to implement on the target platform. 
+	In order to compile Halide, we need to compile \gls{llvm} with the flag without shared libraries otherwise, Halide won't compile, and also with support for the desired targets (x86, \gls{riscv} and \gls{aarch64}).
+
+		Using the  comment inside the pipeline header file, we can determine which function we need to implement to make Halide work on our target platform. The error messages during the linking phase are also a good source of information to find which function are needed to compile the code. 
+
 		Currently only the memory allocation functions, the print functions and the task distribution functions are implemented, and they are enough to  test basic pipelines such as matrix multiplications or light image modifications.
 	After the implementation we can work on the compilation workflow for hero.
+
 
 \section{Compilation Workflow}
 	Every application has at least two source files, one C++ file which will generate the object file of the pipeline, the main application. 
