@@ -12,34 +12,95 @@
 
 \chapter{Results}
 \section{Test Setup}
-	To compare Halide and OpenMp, I ran a matrix multiplication program coded using OpenMp and Halide. I ran the applications in the hardware simulation, using only the \gls{pulp} cluster. 
-	The matrices for the Halide application were randomly generated and for the OpenMP application I generated them using a predefined patttern. As the multiplication operation always take two cycles, the value inside the matrices doesn't matter as long as they have the same size.
+	To compare Halide and \gls{openmp}, I ran a matrix multiplication program coded using \gls{openmp} and Halide. I ran the applications in the hardware simulation, using only the \gls{pulp} cluster. 
+	The matrices for the Halide application were randomly generated and for the \gls{openmp} application I generated them using a predefined patttern. As the multiplication operation always take two cycles, the value inside the matrices doesn't matter as long as they have the same size.
 	I made sure that the two matrices were stored in the L1 cache, to have the best access time possible.
-	To measure the number of cycles needed to run the application, I used two functions available in the hero sdk: \verb|hero_reset_clk_counter()| and \verb|hero_get_clk_counter()|. These functions resets and output the value of a counter incremented every cycle, as they only take less than twenty cycles to execute, they are useful to get cycles accurate measurements of the execution time of the function.
-	With this setup, we can easily compare the performances of halide and OpenMp in a real world scenario for at least two basic schedules: Single threaded and Multi Threaded. I then experimented with different schedule with Halide to see the maximal performance I could get with this application.
+	To measure the number of cycles needed to run the application, I used two functions available in the hero sdk: \texttt{hero\_reset\_clk\_counter()} and \texttt{hero\_get\_clk\_counter()}. These functions reset and return the value of a cycle counter. As they only take few assembly instructions, they are useful to get cycles accurate measurements of the execution time.
+	With this setup, we can easily compare the performances of Halide and \gls{openmp} in a real world scenario for at least two basic schedules: single threaded and multi threaded. I then experimented with different schedule with Halide to see the maximal performance I could get with this application.
 
 % CORRECT THE NUMBER OF Operations
 	To give the results more meaning, I converted the benchmark data in operations per cycles where one operation can either be an addition or a multiplication, so for a matrix of size n, the number of operations to finish the multiplication is : $2n^3$.
 
-\section{Comparaison between OpenMp and Halide on the different platforms}
+\section{Comparaison between \gls{openmp} and Halide on the different platforms}
 
 % Table of the values
 \begin{figure}
 	    \captionsetup{skip=1cm}
         \input{figures_raw/Barplot.pgf}
-    \caption{Halide vs OpenMP, relative to halide base schedule}
+    \caption{Halide vs OpenMP, relative to halide base schedule performance}
 	\label{fig:barPlot}
 \end{figure}
-	Halide base schedule performs similarly from OpenMP single threaded, differing only by a few thousands cycles for the last test (with two matrices of size 35 by 35). The two implementation are prettty similar, and Halide overhead is in this case almost negligeable. The second schedule I tested on both \glspl{api} was the parallel schedule; as paralellisation is the most efficient way to increase performance especially as there is no data dependancy in this pipeline. Often, paralellization instructions do have a lot of overhead which may impact the final performance of the code. To represent  the code efficiency, I used the number of useful operations per cycles. As we have eight core at our disposal, capable at most of one operation per cycle, we can achieve at best eight operations per cycle. The graph~\ref{fig:roofline}, represent the performance of the schedule relative to the computing intensity of the program (The number of operations required to output one byte of data). The computational intensity for a matrix of size n is $C_n = \frac{2n^3}{12n^2} = \frac{n}{6}$ where $2n^3$ is the number of operations, and $12n^2$ is the number of byte needed to complete the operation on 32 bits integers.
 
-	On the  graph~\ref{fig:roofline}, we can see that Halide with it's parallel schedule achieves better results than OpenMP on all the sizes tested( from fifteen by fifteen up to thirty five by thirty five). The gaps in performance stays between $.2$ operations per cycles and $.4$ operations per cycles depending on the size of the matrices.
+\input{content/Benchmarks.tex}
 
 
-\input{test.tex}
-
-\begin{figure}
+\begin{figure}[H]
 	\input{figures_raw/Roofline.pgf}
-    \caption{A PGF histogram from \texttt{matplotlib}.}
+    \caption{Roofline plot of the benchmark results}
 	\label{fig:roofline}
 \end{figure}
 
+
+	Halide base schedule performs similarly from \gls{openmp} single threaded, differing only by a few thousands cycles for the last test (with two matrices of size 35 by 35).
+	The two implementation are prettty similar, and Halide overhead is in this case almost negligeable.
+
+	The second schedule I tested on both \glspl{api} was the parallel schedule; as parallelisation is the most efficient way to increase performance especially when there is no data dependancy in the pipeline. To have the best possible performance, the \gls{api} needs to be as small as possible.
+
+	The table~\ref{Table:Benchmarks} show the results of both applications, with every size tested, we can see that Halide is in every situation at least $.2$ operations per cycle faster than \gls{openmp}.
+
+%	To represent  the code efficiency, I used the number of useful operations per cycles. As we have eight core at our disposal, capable at most of one operation per cycle, we can achieve at best eight operations per cycle. The graph~\ref{fig:roofline}, represent the performance of the schedule relative to the computing intensity of the program (The number of operations required to output one byte of data). The computational intensity for a matrix of size n is $C_n = \frac{2n^3}{12n^2} = \frac{n}{6}$ where $2n^3$ is the number of operations, and $12n^2$ is the number of byte needed to complete the operation on 32 bits integers.
+
+%	On the  graph~\ref{fig:roofline}, we can see that Halide with it's parallel schedule achieves better results than OpenMP on all the sizes tested( from fifteen by fifteen up to thirty five by thirty five). The gaps in performance stays between $.2$ operations per cycles and $.4$ operations per cycles depending on the size of the matrices.
+
+
+I also tried multiple schedule for Halide to see the best performance \gls{hero} could achieve on this benchmark. I tried to combine the parallel schedule with loop unrolling or tiling, but I was only getting worse results due to the additional jumps or the additional computation implied by loop unrolling. When the unrolling factor isn't a divisor of the number of loop iteration, Halide shift the final iteration to always compute the same number of element each iteration. This shift forces the pipeline to recompute some output values.
+
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
+\begin{lstlisting}[caption={Schedule using Parallel and Vectorize}, captionpos=b, label={code:good_schedule}]
+	out.parallel(y);
+	out.vectorize(x, 10);
+
+\end{lstlisting}
+
+	The vectorize schedule used with parallel proves to be the most efficient solution, on twenty by twenty matrices, the parallel schedule alone achieved $1.026$ operations per cycle, against $2.169$ operations per cycle using the schedule~\ref{code:good_schedule}.
+	I then exhaustively tried every vectorization factor possible to see which performed best.
+
+\begin{figure}[H]
+	\begin{center}
+	\resizebox{10cm}{!}{\input{figures_raw/Vectorize.pgf}}
+	\label{Fig:Vectorization}
+		\caption{Impact of the vectorization factor on the performance of the application}
+	\end{center}
+\end{figure}
+
+%0_paraYVect_2/modelsimLog:   11619 Cycles
+%1_paraYVect_3/modelsimLog:   10433 Cycles
+%2_paraYVect_4/modelsimLog:   9240  Cycles
+%3_paraYVect_5/modelsimLog:   8358  Cycles
+%4_paraYVect_6/modelsimLog:   9333  Cycles
+%5_paraYVect_7/modelsimLog:   8012  Cycles
+%6_paraYVect_8/modelsimLog:   8442  Cycles
+%7_paraYVect_9/modelsimLog:   9151  Cycles
+%8_paraYVect_10/modelsimLog:  7376  Cycles
+%9_paraYVect_11/modelsimLog:  7829  Cycles
+%10_paraYVect_12/modelsimLog: 8049  Cycles
+%11_paraYVect_13/modelsimLog: 10202 Cycles
+%12_paraYVect_14/modelsimLog: 11387 Cycles
+%13_paraYVect_15/modelsimLog: 12755 Cycles
+%14_paraYVect_16/modelsimLog: 13894 Cycles
+%15_paraYVect_17/modelsimLog: 15551 Cycles
+%16_paraYVect_18/modelsimLog: 18007 Cycles
+%17_paraYVect_19/modelsimLog: 18358 Cycles
+
+
+
+
+
+
+%- Tried differents schedule to get better performances:
+%        - parallel X, Y
+%        - unrolling, tiling, and combination of both, but always worse performances
+%- Best schedule to date (20 x 20 matrices):
+%    - parallel over Y (15 595 cycles 1.0259 OPC)
+%    - parallel over Y + vectorize X (10) (7376 cycles 2.169 OPC)
+%
