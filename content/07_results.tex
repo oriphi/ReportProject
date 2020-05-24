@@ -12,22 +12,34 @@
 
 \chapter{Results}
 \section{Test Setup}
-	I benchmarked two applications on two platforms. I benchmarked the halide port  on the hardware simulation for the PULP cluste, and one openMp matrix multiplication application on the developpement platform on a Xilinx ZCU102. For the halide Application I generated random matrices, and for the openMp application I generated them using the same pattern every time. But as one multiplication takes two cycles every time, the execution time doesn't depend on the content of the matrices. The two matrices were stored in the L1 cache, to have the best access time we could, and to compare the code efficiency of both \gls{api}.
+	To compare Halide and OpenMp, I ran a matrix multiplication program coded using OpenMp and Halide. I ran the applications in the hardware simulation, using only the \gls{pulp} cluster. 
+	The matrices for the Halide application were randomly generated and for the OpenMP application I generated them using a predefined patttern. As the multiplication operation always take two cycles, the value inside the matrices doesn't matter as long as they have the same size.
+	I made sure that the two matrices were stored in the L1 cache, to have the best access time possible.
 	To measure the number of cycles needed to run the application, I used two functions available in the hero sdk: \verb|hero_reset_clk_counter()| and \verb|hero_get_clk_counter()|. These functions resets and output the value of a counter incremented every cycle, as they only take less than twenty cycles to execute, they are useful to get cycles accurate measurements of the execution time of the function.
 	With this setup, we can easily compare the performances of halide and OpenMp in a real world scenario for at least two basic schedules: Single threaded and Multi Threaded. I then experimented with different schedule with Halide to see the maximal performance I could get with this application.
 
-	To give the results more meaning, I converted the benchmark data in operations per cycles where one operation can either be an addition a multiplication or a memory access (which take 2 cycles each), so for a matrix of size n, the number of operations to finish the multiplication is : $2 * n ** 3$.
+% CORRECT THE NUMBER OF Operations
+	To give the results more meaning, I converted the benchmark data in operations per cycles where one operation can either be an addition or a multiplication, so for a matrix of size n, the number of operations to finish the multiplication is : $2n^3$.
 
-\begin{figure}
-	    \captionsetup{skip=1cm}
-	\input{figures_raw/Roofline.pgf}
-    \caption{A PGF histogram from \texttt{matplotlib}.}
-\end{figure}
+\section{Comparaison between OpenMp and Halide on the different platforms}
 
+% Table of the values
 \begin{figure}
 	    \captionsetup{skip=1cm}
         \input{figures_raw/Barplot.pgf}
+    \caption{Halide vs OpenMP, relative to halide base schedule}
+	\label{fig:barPlot}
+\end{figure}
+	Halide base schedule performs similarly from OpenMP single threaded, differing only by a few thousands cycles for the last test (with two matrices of size 35 by 35). The two implementation are prettty similar, and Halide overhead is in this case almost negligeable. The second schedule I tested on both \glspl{api} was the parallel schedule; as paralellisation is the most efficient way to increase performance especially as there is no data dependancy in this pipeline. Often, paralellization instructions do have a lot of overhead which may impact the final performance of the code. To represent  the code efficiency, I used the number of useful operations per cycles. As we have eight core at our disposal, capable at most of one operation per cycle, we can achieve at best eight operations per cycle. The graph~\ref{fig:roofline}, represent the performance of the schedule relative to the computing intensity of the program (The number of operations required to output one byte of data). The computational intensity for a matrix of size n is $C_n = \frac{2n^3}{12n^2} = \frac{n}{6}$ where $2n^3$ is the number of operations, and $12n^2$ is the number of byte needed to complete the operation on 32 bits integers.
+
+	On the  graph~\ref{fig:roofline}, we can see that Halide with it's parallel schedule achieves better results than OpenMP on all the sizes tested( from fifteen by fifteen up to thirty five by thirty five). The gaps in performance stays between $.2$ operations per cycles and $.4$ operations per cycles depending on the size of the matrices.
+
+
+\input{test.tex}
+
+\begin{figure}
+	\input{figures_raw/Roofline.pgf}
     \caption{A PGF histogram from \texttt{matplotlib}.}
+	\label{fig:roofline}
 \end{figure}
 
-\section{Comparaison between OpenMp and Halide on the different platforms}

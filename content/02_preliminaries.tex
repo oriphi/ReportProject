@@ -10,30 +10,32 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Preliminaries / Background}
+\chapter{Background}
 \section{Hero}
 \section{Halide Language}
 	\subsection { Programing model}
-		Halide is a functionnal programming language embedded into C++, designed to write high performance image and array processing code~\cite{Web:Halide}. This language uses a functionnal paradigm to describe the the processing pipeline, and disociate the algorithmic code from the it's schedule (how the code will be compiled and run on the system). 
+		Halide is a functionnal programming language embedded into C++, designed to write high performance image and array-processing code~\cite{Web:Halide}. This language uses a functionnal paradigm to describe the processing pipeline, and dissociate the array-processing code from the it's schedule (how the code will be compiled and run on the system). 
 
 
-		Every pipeline is a function (\verb|Halide::Func|) composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code snippet~\ref{code:simple_pipeline} 
-		describe a basic pipeline which compute the distance of each coordinate of a two-dimensional array from on position specified by the vector \verb|(center_x, center_y)|. The creation of the pipeline is straightforward, we have to code the operation we want to execute on every element of the domain (here computing the distance to a given position).
+		Every pipeline is a function (\verb|Halide::Func|) composed of other functions and expressions (\verb|Halide:expr|). These two objects  use special variables (\verb|Halide:Vars|) to describe the operation executed on the array. The code listing~\ref{code:simple_pipeline} 
+		describe a basic pipeline which compute the distance of each coordinate of a two-dimensional array from on position specified by the vector \verb|(center_x, center_y)|. The creation of the pipeline is straightforward, we have to code the operation we want to execute on every element of the domain, for this example, we compute the square of the distance to the point \verb|(center_x, center_y)|.
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
 \begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b, label={code:simple_pipeline}]
-Halide::Var x, y;
-Halide::Param center_x, center_y;
-Halide::Expr offset = Halide::pow(x - center_x, 2) 
+	Halide::Var x, y;
+	Halide::Param center_x, center_y;
+	Halide::Expr offset = Halide::pow(x - center_x, 2) 
                       + Halide::pow(y - center_y, 2);
 
 	gradient(x, y) = offset;
 \end{lstlisting}
 
 
-	This simple pipeline only has one stage, but it is possible to create multi-stage pipelines and schedule them as wanted. They can be transformed it into a single stage inlined pipeline or kept as is but allowing only the next stage to execute when the previous one has computed all it's value, or allow it to progress as soon as he has the required data at it's disposal.
+	This simple pipeline only has one stage, but it is possible to create multi-stage pipelines and schedule them as wanted. They can be transformed into a single-stage inlined pipeline or kept as is.
+	The different stages can be scheduled to start as soon as they have enough data, or wait for the previous one to finish before starting to compute.
 
-	After designing the  pipeline, we can define it's schedule via the different directives included in Halide. Halide implements basic scheduling primitives that can be combined to create complex schedules. The primitives consists of basic code transformations such as loop unrolling or reordering, loop splitting or fusing variable together, more advanced instructions like parallelization or vectorization are also available. I will explain their behavior more in detail in the section~\nameref{section:scheduling}.
+	Scheduling is done via basic scheduling primitives implemented by Halide.
+They can be combined to create complex schedules. The primitives consists of basic code transformations such as loop unrolling or reordering, loop splitting or fusing variable together, more advanced instructions like parallelization or vectorization are also available. I will explain their behavior more in detail in the section~\nameref{section:scheduling}.
 
 
 	In the example~\ref{code:simple_pipeline_schedule}, we can see how the scheduling works. All instructions are a function of the pipeline object, they take the variables of the pipeline as argument to specify on which part of the pipeline this schedule will affect. During compilation, Halide will generate the code corresponding to the schedule specified by the programmer (if this schedule is valid).
@@ -244,8 +246,7 @@ Halide::Expr offset = Halide::pow(x - center_x, 2)
 			\centering
 			\begin{lstlisting}[label={code:reorder}];
 	pipeline.parallel(y);
-	# Core 0: y = 0
-	for(int x = 0; x < 4; x++){
+	# Core 0: y = 0 for(int x = 0; x < 4; x++){
 		do something on (x,0)
 	}
 
@@ -272,7 +273,7 @@ The parallel schedule allows the pipeline to be distributed to all the available
 
 
 	\subsection { Porting Halide to new Platforms}
-	In order to compile Halide, we need to compile \gls{llvm} with the flag without shared libraries otherwise, Halide won't compile, and also with support for the desired targets (x86, \gls{riscv} and \gls{aarch64}).
+	In order to compile Halide, we need to compile \gls{llvm} with the flag without shared libraries otherwise, Halide won't compile, and  with support for the desired targets (x86, \gls{riscv} and \gls{aarch64}).
 
 		Using the  comment inside the pipeline header file, we can determine which function we need to implement to make Halide work on our target platform. The error messages during the linking phase are also a good source of information to find which function are needed to compile the code. 
 
