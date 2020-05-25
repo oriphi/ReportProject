@@ -12,7 +12,7 @@
 
 
 \chapter{Design Implementation}
-	To test halide on hero, I used two benchmark. The first one was a basic gradient example, and the second one a matrix multiplication pipeline that I took in the provided examples and then adapted to be used in a hero application.
+	To test halide on hero, I used two applications. The first one was a basic gradient example, and the second one a matrix multiplication pipeline that I took in the provided examples and then adapted to be used in a hero application.
 The matrix axample is more interesting, because it represent what a typical signal processing application may do. It is also quite easy to benchmark with different sizes to see the impact of the memory access on the execution time.
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
@@ -30,12 +30,19 @@ The matrix axample is more interesting, because it represent what a typical sign
     out(x, y) = matrix_mul(x, y);
 
 \end{lstlisting}
+	The listing~\ref{code:matmul_pipeline} shows the full algorithm. The implementation is straight forward and is pretty close to the mathematical expression of the operation.
 
 \section{Schedule Implementation }
 	Most of the schedules implemented on halide doesn't require any platform specific implementation as they are only unrolling, splitting or swapping loops. During my project I used two platform specific schedules: vectorization and parallelization.
-	The \verb|.vectorize(x)| instrucion unrolls one loop in assembly, and the vectorization is done by g++ using the SIMD instructions of the chip. For hero, the simd extention wasn't supported by g++ but, we could still use this instructions as it reduced the number of jumps and thus the total execution time.
 
-	The \verb|.parallel(x)| instructions uses two functions: \verb|halide_do_par_for| and \verb|halide_do_par_for_fork|. \verb|halide_do_par_for| adds the tasks to the task queue of the pulp cluster, every task will execute  \verb|halide_do_par_for_fork| on the corresponding core (if the core id is equal to the task number modulo the number of available cores). Every task consist of a part of the processing pipeline.
+	\subsection{Modification to the \gls{pulp} runtime}
+	The missing halide functions needs to be accessible to the pulp runtime, we added a new file in the kernel of the runtime: \texttt{halide\_api.c}. This file contains all the basic function required to run halide on Hero. This files implement \gls{atomicOp} needed for parallelisation, and a all the function needed to try basic schedules.
+
+	Currently, only the \texttt{parallel()} instruction needs a specific function. The task distribution is done using \texttt{halide\_do\_par\_for}. This function initialise the \gls{pulp} cluster and initialize all the tasks un the queue. These task executes \texttt{halide\_do\_par\_for\_fork} which is a wrapper around the pipeline function to select which task to execute on which core. To know which task to execute, the core execute the task only if the task number modulo the number of core on the platform is equal to the core id.
+
+	Halide doesn't support the \gls{riscv} vector extension, but it can still be used on the platform, on \gls{pulp}, the code will be reshaped to compute the targetted domain as a single vector. But won't use the vector extension to do so.
+
+
 %\begin{figure}[tb]
 %  \centering
 %  \includegraphics[width=\linewidth]{./figures/tb}
