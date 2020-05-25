@@ -1,0 +1,130 @@
+\hypertarget{introduction}{%
+\subsection{Introduction}\label{introduction}}
+
+Heterogeneous systems combine a general-purpose host processor with
+domain-specific Programmable Many-Core Accelerators (PMCAs). Such
+systems are highly versatile, due to their host processor capabilities,
+while having high performance and energy efficiency through their PMCAs.
+HERO is a FPGA-based research platform developed at IIS that combines a
+PMCA composed by RISC-V cores, implemented as soft cores on an FPGA
+fabric, with a hard ARM Cortex-A multicore host processor.
+
+Heterogeneous systems have a complex programming model, which lead to
+significant effort to develop tools to retain a high programmer
+productivity. Halide is domain specific programming language designed to
+write fast image processing algorithms. More specifically, it is a C++
+dialect with a functional programming paradigm. It's aim is to separate
+the function applied to the image (pipeline), and the sequence in which
+the algorithm is executed (schedule). For example, the schedule
+encompasses how the algorithm is parallelized, if the image is tiled,
+processed in column or row major order, if solutions required by
+multiple threads are shared or recomputed, if parts of the computation
+is offloaded to an accelerator, and so on. This allows a programmer to
+write a functional description of the image processing algorithm and
+then explore ways of scheduling the execution with only a couple of
+lines of code, and without modifying the algorithm. Furthermore, the
+same algorithm can be run efficiently on multiple different
+architectures by only changing the schedule. To have Halide generate
+efficient code, the specific architecture requires to have an efficient
+Halide runtime implementation, and good compiler support, as Halide is
+tightly coupled with the compiler.
+
+\hypertarget{project_description}{%
+\subsection{Project description}\label{project_description}}
+
+The goal of this project is to bring up Halide on HERO, using Ariane, a
+64-bit RV64GC core, as a host processor. Ariane would manage Halide's
+frontend, while the image processing tasks would execute on 32-bit cores
+in the cluster. The final goal of this thesis is to have Halide
+programmed image processing kernels running on an HERO system
+implemented on an FPGA.
+
+The project can be done by as one or two semester thesis. The project
+consists of three parts:
+
+1. Familiarizing with the Halide language and the architecture of HERO
+(\textasciitilde2 person weeks).
+
+2. Add a RISC-V target to Halide's frontend (\textasciitilde3 person
+weeks).
+
+3. Test up the Halide environment on an FPGA with a set of custom image
+processing kernels (\textasciitilde1 person week)
+
+4. Documentation and report writing (\textasciitilde1 person week)
+
+\hypertarget{required_skills}{%
+\subsection{Required skills}\label{required_skills}}
+
+To work on this project, you will need:
+
+\begin{itemize}
+\item
+  to have worked in the past with at least one RTL language
+  (SystemVerilog or Verilog or VHDL). Having followed the VLSI 1 course
+  is recommended.
+\item
+  to have prior knowlegde of the C++ programming language
+\item
+  to have prior knowledge of hardware design and computer architecture
+\item
+  to be motivated to work hard on a super cool open-source project
+\end{itemize}
+
+\hypertarget{status_in_progress}{%
+\subsubsection{Status: In progress}\label{status_in_progress}}
+
+\begin{itemize}
+\item
+  Student: Pierre-Hugues Blelly
+\item
+  Supervision: \href{:User:Matheusd}{Matheus Cavalcante},
+  \href{:User:Sriedel}{Samuel Riedel}, \href{:User:Akurth}{ Andreas
+  Kurth}
+\end{itemize}
+
+\hypertarget{professor}{%
+\subsubsection{Professor}\label{professor}}
+
+\begin{description}
+\item[]
+\href{http://www.iis.ee.ethz.ch/portrait/staff/lbenini.en.html}{Luca
+Benini}
+\end{description}
+
+\hypertarget{meetings_presentations}{%
+\subsection{Meetings \& Presentations}\label{meetings_presentations}}
+
+The students and advisor(s) agree on weekly meetings to discuss all
+relevant decisions and decide on how to proceed. Of course, additional
+meetings can be organized to address urgent issues.
+
+Around the middle of the project there is a design review, where senior
+members of the lab review your work (bring all the relevant information,
+such as prelim. specifications, block diagrams, synthesis reports,
+testing strategy, ...) to make sure everything is on track and decide
+whether further support is necessary. They also make the definite
+decision on whether the chip is actually manufactured (no reason to
+worry, if the project is on track) and whether more chip area, a
+different package, ... is provided. For more details refer to
+\href{http://eda.ee.ethz.ch/index.php/Design_review}{(1)}.
+
+At the end of the project, you have to present/defend your work during a
+15 min. presentation and 5 min. of discussion as part of the IIS
+Colloquium.
+
+\hypertarget{references}{%
+\subsection{References}\label{references}}
+
+\begin{enumerate}
+\item
+  Andreas Kurth, Pirmin Vogel, Alessandro Capotondi, Andrea Marongiu,
+  Luca Benini. HERO: Heterogeneous Embedded Research Platform for
+  Exploring RISC-V Manycore Accelerators on FPGA. CARRV' 2017.
+  \href{https://doi.org/10.3929/ethz-b-000219249}{link}
+\item
+  Jonathan Ragan-Kelley, Andrew Adams, Sylvain Paris, Marc Levoy, Saman
+  Amarasinghe, Frédo Durand. Decoupling Algorithms from Schedules for
+  Easy Optimization of Image Processing Pipelines. SIGGRAPH 2012.
+  \href{http://people.csail.mit.edu/jrk/halide12}{link}
+\end{enumerate}
