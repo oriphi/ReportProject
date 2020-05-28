@@ -35,12 +35,20 @@ The matrix axample is more interesting, because it represent what a typical sign
 \section{Schedule Implementation }
 	Most of the schedules implemented on halide doesn't require any platform specific implementation as they are only unrolling, splitting or swapping loops. During my project I used two platform specific schedules: vectorization and parallelization.
 
-	\subsection{Modification to the \gls{pulp} runtime}
+	\subsection{Modification to the \acrshort{pulp} runtime}
 	The missing halide functions needs to be accessible to the pulp runtime, we added a new file in the kernel of the runtime: \texttt{halide\_api.c}. This file contains all the basic function required to run halide on Hero. This files implement \gls{atomicOp} needed for parallelisation, and a all the function needed to try basic schedules.
 
 	Currently, only the \texttt{parallel()} instruction needs a specific function. The task distribution is done using \texttt{halide\_do\_par\_for}. This function initialise the \gls{pulp} cluster and initialize all the tasks un the queue. These task executes \texttt{halide\_do\_par\_for\_fork} which is a wrapper around the pipeline function to select which task to execute on which core. To know which task to execute, the core execute the task only if the task number modulo the number of core on the platform is equal to the core id.
 
 	Halide doesn't support the \gls{riscv} vector extension, but it can still be used on the platform, on \gls{pulp}, the code will be reshaped to compute the targetted domain as a single vector. But won't use the vector extension to do so.
+
+
+ %%% WORK ON THE COMPILATION WORKFLOW
+\section{Compilation Workflow}
+	Every application has at least two source files, one C++ file which will generate the object file of the pipeline, the main application. 
+	Currently, application can only be compiled for the hardware simulator.
+	The compilation has two phases, during the first one, we compile the Halide application using \gls{llvm} and run it on the host platform, this application will then generate an \gls{riscv} object file and a header.
+	Then we compile the hero application using the same Makefile as the \gls{openmp} applications, but we also include the header in the main application and the object file to the sources during the linking command.
 
 
 %\begin{figure}[tb]

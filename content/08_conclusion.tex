@@ -10,10 +10,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Background}
+\chapter{Conclusion}
 
 
-\subsection{Conclusion}
+\section{Conclusion}
 The goal of the project was to port Halide, an image processing language on \gls{hero}, and run image processing kernel on the test hardware.
 Some functions were missing on the \gls{pulp} runtime, so we first added them to the source code. 
 Then we added the Halide source to the \gls{hero} project and built the library. The compiling options of \gls{llvm} needed to be changed to sucessfully compile Halide.
@@ -24,7 +24,7 @@ I then tried to make the heterogeneous compilation work on the \gls{hero} platfo
 
 Even if I couldn't finish the project, on the \gls{rtl} simulator, Halide showed promising results, but it need to be benchmarked more thoroughly to have a better idea of the performances Halide can achieve.
 
-\subsection{Future Work}
+\section{Future Work}
 A lot of work needs to be done to merge Halide on the main branch of \gls{hero}, The heterogeneous workflow for Halide needs to be fixed as it is  impossible right now to distribute code to the \gls{pulp} cluster from the ARM cluster. 
 The \gls{ci} is currently not working, which is probably due to the change of options when compiling \gls{llvm}, this may also cause compability issues with \gls{openmp} or other components of the toolchain. This branch requires in depth testing before being merged with the main project.
 
