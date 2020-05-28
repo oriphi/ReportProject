@@ -9,14 +9,18 @@ Halide: No Schedule& 40628 (0.166)& 93818 (0.171)& 180686 (0.173)\\
 \hline
 Halide: Parallel& 6950 (0.971)& 15585 (1.027)& 30413 (1.028)\\ 
 \hline
-Halide: Parallel + Vectorize& 4339 (1.556)& 8358 (1.914)& 15585 (2.005)\\ 
-\hline
 OpenMp: Single Thread& 39820 (0.17)& 92650 (0.173)& 179030 (0.175)\\ 
 \hline
-	OpenMp: Parallel &  12079 (0.559)& 24750 (0.646)& 38090 (0.82)\\ 
+OpenMp: Parallel No DMA & 12079 (0.559)& 24750 (0.646)& 38090 (0.82)\\ 
 \hline
 
 \end{tabular}
+\end{center}
+\end{table}
+
+
+\begin{table}[ht]
+\begin{center}
 \begin{tabular}{|c||c|c|c|}
 \hline
 Schedule& 30x30& 35x35& 40x40\\ 
@@ -26,16 +30,14 @@ Halide: No Schedule& 309426 (0.175)& 488316 (0.176)& 725606 (0.176)\\
 \hline
 Halide: Parallel& 42659 (1.266)& 71279 (1.203)& 92536 (1.383)\\ 
 \hline
-Halide: Parallel + Vectorize& 18776 (2.876)& 32295 (2.655)& 36487 (3.508)\\ 
-\hline
 OpenMp: Single Thread& 307210 (0.176)& 485440 (0.177)& 721970 (0.177)\\ 
 \hline
-OpenMp: Parallel & 59887 (0.902)& 89283 (0.96)& 126523 (1.012)\\ 
+OpenMp: Parallel No DMA & 59887 (0.902)& 89283 (0.96)& 126523 (1.012)\\ 
 \hline
 
 \end{tabular}
 \end{center}
-\caption{Benchmark results in number of operations (operations / cycle)}
-	\label{Table:Benchmarks}
+	\caption{Benchmark results in number of operations (operations per cycle) for Halide and OpenMP}
+	\label{Table:BenchmarksHalideOpenMP}
 \end{table}
 

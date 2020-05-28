@@ -12,8 +12,75 @@
 
 \chapter{Results}
 \section{Test Setup}
-	To compare Halide and \gls{openmp}, I ran a matrix multiplication program coded using \gls{openmp} and Halide. I ran the applications in the hardware simulation, using only the \gls{pulp} cluster. 
-	The matrices for the Halide application were randomly generated and for the \gls{openmp} application I generated them using a predefined patttern. As the multiplication operation always take two cycles, the value inside the matrices doesn't matter as long as they have the same size.
+	I tested the Halide implementation using two applications, first the simple pipeline described in the listing~\ref{code:simple_pipeline} to check if everything was working and then with a matrix multiplication pipeline to be closer to a real scenario. Once I checked that Halide was working correctly.
+	I ran a similar matrix multiplication program using \gls{openmp} to compare the parallelisation performance of Halide against the current toolchain available on \gls{hero}.
+	To check the output of the Halide application, I compared the output of the pipeline to the precomputed result.
+	During  all Halide benchmarks, the two input matrices were randomly generated using a python script, as the multiplication on the \gls{pulp} cluster always take two cycles, the content of the matrices does not impact the execution time of the programs.
+	To get comparable results for both applications, stored the matrices in the L1 cache of \gls{hero} to reduce the memory latency.
+	To measure the performance of both applications (on Halide and on \gls{openmp}), I used two functions of the \gls{hero} runtime: \texttt{hero\_reset\_clk\_counter()} and \texttt{hero\_get\_clk\_counter()}.
+	These two functions respectively reset a cycle counter and return the counter's value when called. As their execution is short, we can get cycle accurate result for our benchmarks.
+	The benchmarks were executed on the hardware simulator, as I did not have time to make the heterogenous compilation work.
+
+\section{Halide Results}
+
+% Table of the values
+\begin{figure}[H]
+		\center
+		\scalebox{.8}{\input{figures_raw/Barplot_Halide.pgf}}
+    \caption{Halide results relative to Halide base schedule performance}
+	\label{fig:barPlotHalide}
+\end{figure}
+
+
+
+\begin{figure}[H]
+		\center
+	\scalebox{.8}{\input{figures_raw/Roofline_Halide.pgf}}
+    \caption{Roofline plot for Halide}
+	\label{fig:rooflineHalide}
+\end{figure}
+
+\input{content/BenchmarksHalide.tex}
+
+	The figures~\ref{fig:barPlotHalide} and \ref{fig:rooflineHalide} show the results of Halide for different matrix sizes ranging from 15 to 40.
+	The benchmarks were done using three different schedule: the default one, with no parallelisation, one schedule with parallelisation along the y axis, and one schedule which combines a parallel schedule with a vectorize one.
+	On figure~\ref{fig:barPlotHalide}, we can see that the paralellisation instruction is efficient as this schedule performs between five and eight times better than the default schedule.
+
+	Figure~\ref{fig:rooflineHalide} show the performance of Halide compared to an ideal scenario. As one matrix multiplication can be done in $2n^3$ arithmetic operations, in the best scenario, each core achieve one arithmetic operation per cycle, so we can get up to eight operations per cycle.
+
+	For the default schedule, we can see that the overall performance stays consant and is not dependant on the matrix size. But for the two other schedule, the performance increase when we increase the matrix size. This can be explained by the core utilisation, as every core only executes the task when: \texttt{core\_id == task\_id \% n\_cores}, the overall core utilization is lower for smaller matrices when the matrix size is not a multiple of the number of cores. For a matrix of size twenty, four cores will execute three tasks, and four cores will execute two tasks.
+	But for bigger matrices, core will stay inactive for a smaller fraction of the total execution time, increasing the overall performance of the  system.
+ 
+
+\section{Comparison with an already working toolchain: \acrshort{openmp}}
+
+\begin{figure}[H]
+		\center
+	\scalebox{.6}{\input{figures_raw/RooflineHalideOpenMp.pgf}}
+    \caption{Roofline plot for Halide}
+	\label{fig:rooflineHalideOpenMP}
+\end{figure}
+\begin{figure}[H]
+		\center
+		\scalebox{.6}{\input{figures_raw/BarplotHalideOpenMp.pgf}}
+    \caption{Halide results relative to Halide base schedule performance}
+	\label{fig:barPlotHalideOpenMP}
+\end{figure}
+
+\input{content/BenchmarksHalideOpenMP.tex}
+
+As \gls{hero} already have a working workflow to distribute computation on the \gls{pulp} cluster using \gls{openmp}, we can see how Halide compare to this \gls{api} on  a parallel schedule.
+	First, we can see that both implementation of the matrix multiplication achieve the same parformance, differing only by less than four thousand cycles for fourty by fourty matrices.
+
+	The most interesting results come from the parallel code distribution by the two \glspl{api}.
+
+
+
+
+
+%%%% OLD TEXT
+
+
 	I made sure that the two matrices were stored in the L1 cache, to have the best access time possible.
 	To measure the number of cycles needed to run the application, I used two functions available in the hero sdk: \texttt{hero\_reset\_clk\_counter()} and \texttt{hero\_get\_clk\_counter()}. These functions reset and return the value of a cycle counter. As they only take few assembly instructions, they are useful to get cycles accurate measurements of the execution time.
 	With this setup, we can easily compare the performances of Halide and \gls{openmp} in a real world scenario for at least two basic schedules: single threaded and multi threaded. I then experimented with different schedule with Halide to see the maximal performance I could get with this application.
@@ -23,22 +90,6 @@
 
 \section{Comparaison between \acrshort{openmp} and Halide on the different platforms}
 
-% Table of the values
-\begin{figure}
-	    \captionsetup{skip=1cm}
-        \input{figures_raw/Barplot.pgf}
-    \caption{Halide vs OpenMP, relative to halide base schedule performance}
-	\label{fig:barPlot}
-\end{figure}
-
-\input{content/Benchmarks.tex}
-
-
-\begin{figure}[H]
-	\input{figures_raw/Roofline.pgf}
-    \caption{Roofline plot of the benchmark results}
-	\label{fig:roofline}
-\end{figure}
 
 
 	Halide base schedule performs similarly from \gls{openmp} single threaded, differing only by a few thousands cycles for the last test (with two matrices of size 35 by 35).
@@ -53,7 +104,7 @@
 %	On the  graph~\ref{fig:roofline}, we can see that Halide with it's parallel schedule achieves better results than OpenMP on all the sizes tested( from fifteen by fifteen up to thirty five by thirty five). The gaps in performance stays between $.2$ operations per cycles and $.4$ operations per cycles depending on the size of the matrices.
 
 
-I also tried multiple schedule for Halide to see the best performance \gls{hero} could achieve on this benchmark. I tried to combine the parallel schedule with loop unrolling or tiling, but I was only getting worse results due to the additional jumps or the additional computation implied by loop unrolling. When the unrolling factor isn't a divisor of the number of loop iteration, Halide shift the final iteration to always compute the same number of element each iteration. This shift forces the pipeline to recompute some output values.
+I also tried multiple schedule for Halide to see the best performance \gls{hero} could achieve on this benchmark. I tried to combine the parallel schedule with loop unrolling or tiling, but I was only getting worse results due to the additional jumps or the additional computation implied by loop unrolling. When the unrolling factor is not a divisor of the number of loop iteration, Halide shift the final iteration to always compute the same number of element each iteration. This shift forces the pipeline to recompute some output values.
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
 \begin{lstlisting}[caption={Schedule using Parallel and Vectorize}, captionpos=b, label={code:good_schedule}]

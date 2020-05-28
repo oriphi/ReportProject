@@ -14,18 +14,18 @@
  %%% Give an overview of the content of the section
 		Overview of the content, to be redacted
  %%%
-\section{Hero}
+\section{\acrshort{hero}}
 	% Get the paragraph from the introduction
-	The \gls{hero} platform is an heterogeneous system available in different configurations. 
-	This platform is composed of a hard macro multicore ARM 64 Juno \gls{soc} (composed of two Cortex A57 and four Cortex A53 cores) and up to eight \gls{pulp} clusters (each of them using up to eight RI5CY cores~\cite{Art:Hero}), running on an \gls{fpga}(a Xilinx ZYNC ZC706).
-	\Gls{pulp} is a \gls{cpu} based on the \gls{riscv} \gls{isa}, an open source \gls{isa} designed to support a wide range of platform from embedded systems to supercomputer.
+	The \gls{hero} platform is an heterogeneous platform available in different configurations. 
+	This platform is composed of a hard macro multicore ARM 64 Juno \gls{soc} (composed of two Cortex A57 and four Cortex A53 cores) and up to eight \gls{pulp} clusters (each of them using up to eight RI5CY cores~\cite{Art:Hero}), running on an \gls{fpga} (a Xilinx ZYNC ZC706).
+	\Gls{pulp} is a cluster of \gls{cpu} based on the RISC-V \gls{isa}, an open source \gls{isa} designed to support a wide range of platform from embedded systems to accelerators in datacenters~\cite{Web:EPIriscv}.
 	The modularity of the \gls{isa} makes it an interesting for \glspl{pcma} as the core are designed to support only the useful instruction for the task we want to run, which make them small and energy efficient.
-
-	The system is also available with a Ariane \gls{riscv} 64 bits core, or just as an independant \gls{pulp} cluster for hardware simulation.
+	The system is also available with a Ariane RISC-V 64-bits core, or just as an independent \gls{pulp} cluster for hardware simulation.
+	The system uses 256 \si{KiB} of L1 scratchpad data cache, coupled with 256 \si{KiB} of L2 data and instruction cache and a 4 \si{KiB} of L1 cache.
 
 
 	%Sotware stack on simulation then on the fgpa platform
-	Hero also has a fully functionnal software toolchain with ``support for \gls{openmp}, a linux driver and runtime librarie for both the fost and the \gls{pcma}''~\cite{Art:Hero}. The toolchain uses \texttt{clang}, a C compiler frontend of \gls{llvm}.
+	\Gls{hero} has a fully functional software toolchain with ``support for \gls{openmp}, a linux driver and runtime libraries for both the host and the \gls{pcma}''~\cite{Art:Hero}. The toolchain uses \texttt{clang}, a C compiler front-end of \gls{llvm}.
 	The heterogeneous compiling is done by separately compiling the part of the code and then bundling together inside a single binary the two compiled file during the linking phase of the host~\cite{Report:SoftwareStack}. The final binary uses the host \gls{isa}, and embed the \gls{pcma} code in dedicated sections of the binary.
 
 
@@ -38,10 +38,10 @@
 
 
 		Every pipeline is a function (\texttt{Halide::Func}) built using other functions and expressions (\verb|Halide:expr|) or variables (\texttt{Halide::Vars}).
-		The code listing~\ref{code:simple_pipeline} describe a basic pipeline which computes the distance of each coordinate of a two-dimensional array from a given position\texttt{(center\_x, center\_y)}. 
-		The creation of the pipeline is straightforward, we only need to write the desired operation using the variable \verb|x| and \verb|y|. During the execution of the pipeline or it's compilation, Halide will bound \verb|x| and \verb|y| according to the size of the output.
+		The code Listing~\ref{code:simple_pipeline} describe a basic pipeline which computes the distance of each coordinate of a two-dimensional array from a given position \texttt{(center\_x, center\_y)}. 
+		The creation of the pipeline is straightforward, we only need to write the desired operation using the variables \verb|x| and \verb|y|. During the execution of the pipeline or it's compilation, Halide will bound \verb|x| and \verb|y| according to the size of the output.
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
-\begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b, label={code:simple_pipeline}]
+\begin{lstlisting}[caption={Simple Pipeline Example.}, captionpos=b, label={code:simple_pipeline}]
 	Halide::Var x, y;
 	Halide::Param center_x, center_y;
 	Halide::Expr offset = Halide::pow(x - center_x, 2) 
@@ -54,40 +54,37 @@
 	The different stages can be scheduled to start as soon as they have enough data, or wait for the previous one to finish before starting to compute.
 
 	Scheduling is done via basic scheduling primitives implemented by Halide.
-The primitives consist of basic code transformations such as loop unrolling or reordering, loop splitting or merging variable together into a single one. More advanced instructions like parallelization or vectorization are also available. These instructions can be combined as needed to create complex schedules.
-Section ~\nameref{section:scheduling} explain the most important scheduling instructions in greater details. 
+The primitives consist of basic code transformations such as loop unrolling or reordering, loop splitting or merging variables together into a single one. More advanced instructions like parallelization or vectorization are also available. These instructions can be combined as needed to create complex schedules.
+Section~\ref{section:scheduling} explains the most important scheduling instructions in more details. 
 
 
-	The listing~\ref{code:simple_pipeline_schedule} shows how schedule are designed.
-
-	All instructions are a function of the pipeline object, they can be executed on any variable of the  pipeline. Some instructions need the variables to be bounded (e.g. the vectorize instruction) before using them.
+	The Listing~\ref{code:simple_pipeline_schedule} shows how schedule are designed.
+	All instructions are a function of the pipeline object, they can be executed on any variable of the  pipeline. Some instructions need the variables to be bounded (e.g., the vectorize instruction) before using them.
 	The scheduling primitives can be combined as needed, and the programmer can also create intermediate variables via those primitives to control precisely the execution of the code.
 
 
-	\begin{lstlisting}[caption={Simple Pipeline Example}, captionpos=b,label={code:simple_pipeline_schedule}];
+	\begin{lstlisting}[caption={Simple Schedule Example.}, captionpos=b,label={code:simple_pipeline_schedule}];
 	gradient.parallel(x);
 	gradient.unroll(y, 10);
 	\end{lstlisting}
 
-	In the listing~\ref{code:simple_pipeline_schedule},
+	In the Listing~\ref{code:simple_pipeline_schedule},
  	Halide creates one task per value of \verb|x|. These tasks will be executed in parallel on all the cores of the system. Every task will execute a single loop over the \verb|y| axis, but instead of computing only one value of the output of the pipeline per iteration, the task will compute ten values per iteration.
 
 
 	The pipeline can be translated or compiled by Halide to be executed directly on the compilation computer or in another application.
 	The pipeline can be immediatly executed using the function \texttt{.realize(x\_max, y\_max)}. If an output buffer of the correct size is provided, Halide will execute the pipeline over the rectangular domain \texttt{(0,0),(x\_max,y\_max)}.
-	 As halide was designed primarly to work with different hardware platform, the  cross-compilation process  has been simplified, and the pipeline can be translated to other languages.
-	 Halide support translation to C code, \gls{llvm} assembly file, or already compiled object file specific to a given target(\gls{cuda}, ARM, \gls{riscv}, \gls{mips}, PowerPc...), and a given Operating Systems( Linux, Mac, Windows, Android). The pipeline can also be exported as a static library to use in another application.
+	 As Halide was designed primarily to work with different hardware platforms, the  cross-compilation process  has been simplified, and the pipeline can be translated to other languages.
+	 Halide support translation to C code, \gls{llvm} assembly file, or already compiled object file specific to a given target (\gls{cuda}, ARM, RISC-V, \gls{mips}, PowerPc...), and a given Operating Systems (Linux, Mac, Windows, Android). The pipeline can also be exported as a static library to use in another application.
 
 \subsection{Debugging Options}
 
 	Halide provides tools to debug the pipelines, and debugging tips to help the developers \cite{Web:HalideDebug}.
-
 	The \texttt{print} instructions prints the value of a variable at any point of the pipeline, \texttt{print\_when()} only print when a boolean condition is True.
-
-	The  \verb|.trace_store()| function keeps a trace of every function evaluation during execution, as long as the function hasn't been inlined, the parameters and the result of the function call will be stored in the trace and printed after the exeuction.
+	The  \verb|.trace_store()| function keeps a trace of every function evaluation during execution, as long as the function has not been inlined, the parameters and the result of the function call will be stored in the trace and printed after the exeuction.
 
 	Halide can print more information on the screen during the compilation of the source code by setting the environemental variable \verb|HL_DEBUG_CODEGEN| to 1. Halide will output information about every stages of the compilation and a pseudo code representation of the pipeline loops. 
-	Finally, variables and functions can be labeled. Halide will replace the generic name of the variable with the label when printing the pseudo code or when using gdb.
+	Finally, variables and functions can be labeled. Halide will replace the generic name of the variable with the label when printing the pseudo code or when using \texttt{gdb}.
 
 \subsection {Basic Scheduling Options}
 	\label{section:scheduling}
@@ -117,13 +114,13 @@ Section ~\nameref{section:scheduling} explain the most important scheduling inst
 	
 \end{lstlisting}
 		\end{minipage}
-	\caption{Base Schedule}
+	\caption{Base Schedule.}
 	\label{schedule:default}
 \end{figure}
 
 
 
-	If no schedule is specified, Halide will evaluate the pipeline in the same order as it's arguments. The first variable being the inner most loop, and the last one the outer most loop. In figure~\ref{schedule:default}, Halide will compute the output of the pipeline in a row major fashion.
+	If no schedule is specified, Halide will evaluate the pipeline in the same order as it's arguments. The first variable being the inner most loop, and the last one the outer most loop. In Figure~\ref{schedule:default}, Halide will compute the output of the pipeline in a row major fashion.
 
 	\subsubsection{Reorder}
 
@@ -148,11 +145,11 @@ Section ~\nameref{section:scheduling} explain the most important scheduling inst
 	}
 \end{lstlisting}
 		\end{minipage}
-		\caption{Schedule: Reorder}
+		\caption{Reorder Schedule.}
 		\label{schedule:reorder}
 \end{figure}
 	
-	The \texttt{.reorder} instruction reorders the variable to have the given nesting order, starting from the innermost. In the figure~\ref{schedule:reorder}, the  array is now processed in a column major fashion.
+	The \texttt{.reorder} instruction reorders the variable to have the given nesting order, starting from the innermost. In the Figure~\ref{schedule:reorder}, the  array is now processed in a column major fashion.
 
 	\subsubsection{Fuse}
 
@@ -176,7 +173,7 @@ Section ~\nameref{section:scheduling} explain the most important scheduling inst
 	}
 \end{lstlisting}
 		\end{minipage}
-		\caption{Schedule: Fused}
+		\caption{Fused Schedule.}
 		\label{schedule:fuse}
 \end{figure}
 
@@ -208,7 +205,7 @@ Section ~\nameref{section:scheduling} explain the most important scheduling inst
 	}
 \end{lstlisting}
 		\end{minipage}
-		\caption{Schedule Split}
+		\caption{Split Schedule.}
 		\label{schedule:split}
 \end{figure}
 
@@ -244,7 +241,7 @@ Section ~\nameref{section:scheduling} explain the most important scheduling inst
 	}
 \end{lstlisting}
 		\end{minipage}
-		\caption{Schedule Tile}
+		\caption{Tile Schedule.}
 		\label{schedule:tile}
 \end{figure}
 	The Tile schedule is similar to the Split schedule, but along two dimensions. It creates multiples smaller rectangular tiles which can be processed independently.
@@ -273,10 +270,10 @@ Section ~\nameref{section:scheduling} explain the most important scheduling inst
 
 \end{lstlisting}
 		\end{minipage}
-	\caption{Unroll Schedule}
+	\caption{Unroll Schedule.}
 	\label{schedule:unroll}
 \end{figure}
-	The Unroll schedule unrolls the code along one dimension. This technique is often used when multiple computations share the same data, to prevent multiple memory access. In the figure~\ref{schedule:unroll}, we first  split the x dimension before unrolling as Halide can't unroll a variable if it isn't bounded.
+	The Unroll schedule unrolls the code along one dimension. This technique is often used when multiple computations share the same data, to prevent multiple memory access. In the Figure~\ref{schedule:unroll}, we first  split the x dimension before unrolling as Halide cannot unroll a variable if it is not bounded.
 
 \subsubsection{Parallel}
 \begin{figure}[H]
@@ -305,30 +302,22 @@ Section ~\nameref{section:scheduling} explain the most important scheduling inst
 	}
 \end{lstlisting}
 		\end{minipage}
-		\caption{Schedule Parallel}
+		\caption{Parallel Schedule.}
 		\label{schedule:parallel}
 \end{figure}
 
 
 The parallel schedule distributes the pipeline to all the available cores.
 
-In the example~\ref{schedule:parallel}, the code is distributed on three cores, each of them execute a single loop along the y axis.
+In the Figure~\ref{schedule:parallel}, the code is distributed on three cores, each of them execute a single loop along the y axis.
 
 Halide will create a task for each value the variable can take, and these tasks will be executed with the \texttt{halide\_do\_par\_for} function. This function needs to be overwritten on \gls{hero} to distribute the tasks on the \gls{pulp} cluster. 
 
 
 	\subsubsection{Vectorize}
-	The goal of this schedule is to setup the code so to make use of the \gls{simd} instructions of the \gls{cpu}. Currently, \gls{llvm} doesn't support the vector extension  implemented in the \gls{pulp} cluster, but the generated code will take advantages of all the registers available to compute the output values, and try to compute multiple values at the same time.
+	The goal of this schedule is to setup the code so to make use of the \gls{simd} instructions of the \gls{cpu}. Currently, \gls{llvm} does not support the \gls{simd} extension implemented in the \gls{pulp} cluster, but the generated code will take advantages of all the registers available to compute the output values, and try to compute multiple values at the same time.
 
 
-	\subsection { Porting Halide to new Platforms}
-
-	In order to compile Halide, we need to compile \gls{llvm} with the flag without shared libraries otherwise, Halide won't compile, and  with support for the desired targets (x86, \gls{riscv} and \gls{aarch64}).
-
-	The library header file generated by Halide explains which functions needs to be implemented to make Halide work on our target platform.
-	The error messages during the linking phase are also a good source of information to find which function are needed to compile the code. 
-
-	To make Halide work on \gls{hero}, we only need to port a few subset of functions. As most of the schedule are only reformatting the code, only the parallel schedule has platform specific code. So we can make Halide work with this specific code, the memory allocation primitives and the debugging functions (\texttt{halide\_printf}).
 
 
 

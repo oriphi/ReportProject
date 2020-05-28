@@ -20,9 +20,9 @@ Then we added the Halide source to the \gls{hero} project and built the library.
 Using the Makefile of the \gls{openmp} applications as a base, I sucessfully compiled Halide applications to run on the \gls{rtl} simulator.
 I then tested two applications a gradient and a matrix multiplication to debug the schedules and test if they were working correctly.
 After that, I ran some benchmarks on different matrix sizes to compare the perfromance of Halide and \gls{openmp} to determine whether Halide could compete with \gls{openmp} or not.
-I then tried to make the heterogeneous compilation work on the \gls{hero} platform with the ARM host but I didn't have enough time make it work. I slightly changed the \gls{llvm} target to include other object file during linking. But in the end I didn't have enough time to make it work on the hardware platform.
+I then tried to make the heterogeneous compilation work on the \gls{hero} platform with the ARM host but I did not have enough time make it work. I slightly changed the \gls{llvm} target to include other object file during linking. But in the end I did not have enough time to make it work on the hardware platform.
 
-Even if I couldn't finish the project, on the \gls{rtl} simulator, Halide showed promising results, but it need to be benchmarked more thoroughly to have a better idea of the performances Halide can achieve.
+Even if I could not finish the project, on the \gls{rtl} simulator, Halide showed promising results, but it need to be benchmarked more thoroughly to have a better idea of the performances Halide can achieve.
 
 \section{Future Work}
 A lot of work needs to be done to merge Halide on the main branch of \gls{hero}, The heterogeneous workflow for Halide needs to be fixed as it is  impossible right now to distribute code to the \gls{pulp} cluster from the ARM cluster. 
