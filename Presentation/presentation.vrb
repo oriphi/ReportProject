@@ -1,0 +1,34 @@
+\frametitle{Simple Pipeline example}
+
+% Changer l'exemple
+	\begin{columns}[T]
+		\begin{column}{.5\textwidth}
+			\begin{lstlisting}[language=C]
+ImageParam A(type_of<int>(), 2);
+ImageParam B(type_of<int>(), 2);
+Var x, y;
+Func matrix_mul("matrix_mul");
+Func out;
+RDom k( 0,A.width() );
+matrix_mul(x, y) +=
+			A(x, k) * B(k, y);
+out(x, y) = matrix_mul(x, y);
+
+			\end{lstlisting}
+		\end{column}
+		\begin{column}{.5\textwidth}
+			\begin{lstlisting}[language=C]
+out.tile(x,y,x_o,y_o,x_i,y_i,4,4);
+out.parallel(x_o);
+out.parallel(y_o);
+out.fuse(x_i,y_i,xy);
+out.vectorize(xy);
+
+			\end{lstlisting}
+		\end{column}
+	\end{columns}
+
+	\begin{itemize}
+		\item Pipeline definition: Functions, variables and expressions.
+		\item Schedule definition: Basic Idea on how to schedule + description of some primitives
+	\end{itemize}

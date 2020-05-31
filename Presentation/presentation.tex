@@ -1,0 +1,137 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\author{Pierre-Hugues BLELLY}
+\date{08/06/2020}
+
+\usepackage{listings}
+\usepackage{graphicx}
+
+
+\title{Implementation of a Heterogeneous System for Image Processing on an FPGA.}
+
+\begin{document}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
+\frame{\titlepage}
+
+\begin{frame}{Introduction}
+	\begin{itemize}
+		\item Embedded systems, we need more performance as systems are becoming more complex
+			(examples)
+		\item Heterogenous Systems
+			\begin{itemize}
+				\item Everything is heterogeneous (Computers with network cards and HDD to supercomputer with GPGPU).
+				\item Why do they exist?
+					\begin{itemize}
+						\item Better Energy efficiency under constraint
+						\item Better flexibility thanks to PMCAs
+					\end{itemize}
+				\item Why do we need them?
+					\begin{itemize}
+						\item Autonomous systems
+						\item Enable High processing power on ULP systems.
+					\end{itemize}
+			\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{HERO Platform}
+	\begin{itemize}
+		\item What is HERO? Why does this system exist?
+			\begin{itemize}
+				\item Technical specs (configurations available: simulator + RISC/ Arm host + L1/L2 cache)
+				\item Toolchains / SdK
+				\item Goal of the project: Fully working platform, easier to experiment with heterogeneous systems.
+			\end{itemize}
+		\item Quick presentation of OpenMP, and it's advantages/disadvantages.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Halide}
+	\begin{itemize}
+		\item Presentation of Halide
+			\begin{itemize}
+				\item Programmation model
+				\item Why this language is interesting for application developpement
+			\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+	\frametitle{Simple Pipeline example}
+
+% Changer l'exemple
+	\begin{columns}[T]
+		\begin{column}{.5\textwidth}
+			\begin{lstlisting}[language=C]
+ImageParam A(type_of<int>(), 2);
+ImageParam B(type_of<int>(), 2);
+Var x, y;
+Func matrix_mul("matrix_mul");
+Func out;
+RDom k( 0,A.width() );
+matrix_mul(x, y) +=
+			A(x, k) * B(k, y);
+out(x, y) = matrix_mul(x, y);
+
+			\end{lstlisting}
+		\end{column}
+		\begin{column}{.5\textwidth}
+			\begin{lstlisting}[language=C]
+out.tile(x,y,x_o,y_o,x_i,y_i,4,4);
+out.parallel(x_o);
+out.parallel(y_o);
+out.fuse(x_i,y_i,xy);
+out.vectorize(xy);
+
+			\end{lstlisting}
+		\end{column}
+	\end{columns}
+
+	\begin{itemize}
+		\item Pipeline definition: Functions, variables and expressions.
+		\item Schedule definition: Basic Idea on how to schedule + description of some primitives
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{How to compile to the hardware simulation}
+	\begin{itemize}
+		\item Easiest way is to create a RISC-V object file.
+		\item Add functions to the pulp-rt 
+		\item Then we need to create a wrapper application that will be compiled using gcc
+		\item And we link the object file during compilation
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{What about performances, does Halide perform well ?}
+	\begin{itemize}
+		\item Quick comparaison between Halide and OpenMP with the results in parallel and single threaded.
+		\item good results on this application, but can we do better?
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Optimization of a schedule}
+	\begin{itemize}
+		\item Explain methodology, plus benchmarks
+		\item Automated tool for optimizing schedule
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Next step: Compiling for the full Hero System}
+	\begin{itemize}
+		\item What we tried? 
+			\begin{itemize}
+				\item Using the risc V object file and linking it manually
+				\item Using the OpenMP pragma calls to tell the compiler the function will run on PULP, then use the object file
+				\item Output the code to C, and then include it
+			\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusion}
+	\begin{itemize}
+		\item What is working and what isn't
+		\item Future work on Halide
+	\end{itemize}
+\end{frame}
+
+\end{document}
