@@ -12,6 +12,33 @@
 
 \chapter{Results}
 \section{Test Setup}
+%% À changer
+%% CHANGE FIRST LINE %%%%
+	To test Halide, I used two applications. The first one was a simple gradient example~\ref{code:simple_pipeline},
+	and the second one a matrix multiplication pipeline that I took in the Halide repository and then adapted to be used in a hero application.
+The matrix example is more interesting, as it represents what a typical signal processing application may do. It is also quite easy to benchmark with different sizes to see the impact of the memory access on the execution time.
+
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
+\begin{lstlisting}[caption={Matrix Multiplication Pipeline.}, captionpos=b, label={code:matmul_pipeline}]
+    ImageParam A(type_of<int>(), 2);
+    ImageParam B(type_of<int>(), 2);
+    Var x, y;
+    Func matrix_mul("matrix_mul");
+    Func out;
+
+    RDom k( 0,A.width() );
+
+    matrix_mul(x, y) += A(x, k) * B(k, y);
+
+    out(x, y) = matrix_mul(x, y);
+
+
+
+\end{lstlisting}
+    The Listing~\ref{code:matmul_pipeline} shows the full algorithm implementation. The code is straight forward and is pretty close to the mathematical expression of the operation.
+
+
+	%% A CHANGER
 	I tested the Halide implementation using two applications, first the simple pipeline described in the listing~\ref{code:simple_pipeline} to check if everything was working and then with a matrix multiplication pipeline to be closer to a real scenario. Once I checked that Halide was working correctly.
 	I ran a similar matrix multiplication program using \gls{openmp} to compare the parallelisation performance of Halide against the current toolchain available on \gls{hero}.
 	To check the output of the Halide application, I compared the output of the pipeline to the precomputed result.
@@ -27,7 +54,7 @@
 \begin{figure}[H]
 		\center
 		\scalebox{.8}{\input{figures_raw/Barplot_Halide.pgf}}
-    \caption{Halide results relative to Halide base schedule performance}
+    \caption{Halide results relative to Halide base schedule performance.}
 	\label{fig:barPlotHalide}
 \end{figure}
 
@@ -36,7 +63,7 @@
 \begin{figure}[H]
 		\center
 	\scalebox{.8}{\input{figures_raw/Roofline_Halide.pgf}}
-    \caption{Roofline plot for Halide}
+    \caption{Roofline plot for Halide.}
 	\label{fig:rooflineHalide}
 \end{figure}
 
@@ -48,11 +75,14 @@
 
 	Figure~\ref{fig:rooflineHalide} show the performance of Halide compared to an ideal scenario. As one matrix multiplication can be done in $2n^3$ arithmetic operations, in the best scenario, each core achieve one arithmetic operation per cycle, so we can get up to eight operations per cycle.
 
-	For the default schedule, we can see that the overall performance stays consant and is not dependant on the matrix size. But for the two other schedule, the performance increase when we increase the matrix size. This can be explained by the core utilisation, as every core only executes the task when: \texttt{core\_id == task\_id \% n\_cores}, the overall core utilization is lower for smaller matrices when the matrix size is not a multiple of the number of cores. For a matrix of size twenty, four cores will execute three tasks, and four cores will execute two tasks.
+	For the default schedule, we can see that the overall performance stays consant and is not dependant on the matrix size. 
+	But for the two other schedule, the performance increase when we increase the matrix size.
+	This can be explained by the core utilisation, as every core only executes the task when: \texttt{core\_id == task\_id \% n\_cores}, the overall core utilization is lower for smaller matrices when the matrix size is not a multiple of the number of cores.
+	For a matrix of size twenty, four cores will execute three tasks, and four cores will execute two tasks.
 	But for bigger matrices, core will stay inactive for a smaller fraction of the total execution time, increasing the overall performance of the  system.
  
 
-\section{Comparison with an already working toolchain: \acrshort{openmp}}
+\section{Comparison with an already working toolchain: \acrshort{openmp}.}
 
 \begin{figure}[H]
 		\center
@@ -63,16 +93,42 @@
 \begin{figure}[H]
 		\center
 		\scalebox{.6}{\input{figures_raw/BarplotHalideOpenMp.pgf}}
-    \caption{Halide results relative to Halide base schedule performance}
+    \caption{Halide results relative to Halide base schedule performance.}
 	\label{fig:barPlotHalideOpenMP}
 \end{figure}
 
 \input{content/BenchmarksHalideOpenMP.tex}
 
-As \gls{hero} already have a working workflow to distribute computation on the \gls{pulp} cluster using \gls{openmp}, we can see how Halide compare to this \gls{api} on  a parallel schedule.
-	First, we can see that both implementation of the matrix multiplication achieve the same parformance, differing only by less than four thousand cycles for fourty by fourty matrices.
+As \gls{hero} already have a working workflow to distribute computation on the \gls{pulp} cluster using \gls{openmp}, we can see how Halide compare to this \gls{api} on a simple  parallel schedule.
+	First, we can see that both implementation of the matrix multiplication achieve the same parformance when using only a single core, differing only by less than four thousand cycles for fourty by fourty matrices.
 
-	The most interesting results come from the parallel code distribution by the two \glspl{api}.
+	When we parallelize the applications accross all the cores, we can see the  performance gap increasing. On fourty by fourty matrices, Halide achievs almost eight times the performance of the single threaded program, where \gls{openmp} achievs around six times the performance.
+
+	On bigger matrices, Halide seems to scale better than \gls{openmp}. Halide performs worse on some sizes (thirty five and twenty five) because of how the tasks are handled.
+	When the size of the matrices is not a multiple of eight, we don't achieve full core utilization during the last round, reducing the overall performances. 
+	On twenty-five by twenty-five matrices, during the last round, only one core is used, achieving on average $\frac{25}{4} = 6.25$ times the performance of the single core program.
+	
+	On this applicationn, we can see that Halide out performs \gls{openmp}. I then  tried to optimize the schedule to see on this application how Halide performs with a more advanced schedule.
+
+\subsection{Optimizing the schedule of the matrix multiplication}
+	I first compared the performance of every basic schedule except the parallel one to see if they impacted the overall result. Every schedule (unroll, split, tile, fuse) was performing slightly worse than the base one except the vectorize schedule, which had an execution time two or three time smaller than the other ones.
+	This can be explain by data reutilisation, on the split, unroll and tile schedule, if we look at the generated asssembly, the code don't reuse any already loaded coefficient, more over as the program often has more jumps to do, the overall execution time increase.
+	On the other hand, the \texttt{vectorize} schedule loads one coefficient of the first matrix, and a $k$ coefficients of the second one (where $k$ is the vector length specified in the schedule) to compute at the same time $k$ coefficients of the output.
+
+	To see which vector length was the best, I exhaustively tried every vector length possible on twenty by twenty matrices. The schedule used to obtain the results shown by Figure~\ref{Fig:Vectorization}, are achieved using this schedule: \texttt{out.parallel(y).vectorize(x,k);}, where \texttt{k} is the vector length.
+
+\begin{figure}[H]
+	\begin{center}
+	\resizebox{10cm}{!}{\input{figures_raw/Vectorize.pgf}}
+	\label{Fig:Vectorization}
+		\caption{Impact of the vectorization factor on the performance of the application.}
+	\end{center}
+\end{figure}
+
+	Figure~\ref{Fig:Vectorization} shows that increasing the vector length too much only decrease the overall performance, this is due to the limited amount of registers. As RISC-V \glspl{cpu} have 32 registers, and some of them have dedicated functionnalities, we can't use all of them.
+	So when we increase the vector length, at one point, there are no available registers to store intermediate computations, and the compiler is forced to store these intermediate values in the caches, which take some  cycles.
+	On RISC-V \glspl{cpu}, the sweetspot seems to be a vector length of eight.
+
 
 
 
@@ -80,8 +136,7 @@ As \gls{hero} already have a working workflow to distribute computation on the \
 
 %%%% OLD TEXT
 
-
-	I made sure that the two matrices were stored in the L1 cache, to have the best access time possible.
+I made sure that the two matrices were stored in the L1 cache, to have the best access time possible.
 	To measure the number of cycles needed to run the application, I used two functions available in the hero sdk: \texttt{hero\_reset\_clk\_counter()} and \texttt{hero\_get\_clk\_counter()}. These functions reset and return the value of a cycle counter. As they only take few assembly instructions, they are useful to get cycles accurate measurements of the execution time.
 	With this setup, we can easily compare the performances of Halide and \gls{openmp} in a real world scenario for at least two basic schedules: single threaded and multi threaded. I then experimented with different schedule with Halide to see the maximal performance I could get with this application.
 
@@ -116,13 +171,6 @@ I also tried multiple schedule for Halide to see the best performance \gls{hero}
 	The vectorize schedule used with parallel proves to be the most efficient solution, on twenty by twenty matrices, the parallel schedule alone achieved $1.026$ operations per cycle, against $2.169$ operations per cycle using the schedule~\ref{code:good_schedule}.
 	I then exhaustively tried every vectorization factor possible to see which performed best.
 
-\begin{figure}[H]
-	\begin{center}
-	\resizebox{10cm}{!}{\input{figures_raw/Vectorize.pgf}}
-	\label{Fig:Vectorization}
-		\caption{Impact of the vectorization factor on the performance of the application}
-	\end{center}
-\end{figure}
 
 %0_paraYVect_2/modelsimLog:   11619 Cycles
 %1_paraYVect_3/modelsimLog:   10433 Cycles

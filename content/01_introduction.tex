@@ -12,44 +12,44 @@
 
 \chapter{Introduction}
 
-    Thanks to the smaller nodes of modern lithography technologies and the transistor density we can achieve with them, modern low-power \glspl{cpu} can have a large amount of cores while keeping their power consumption under a few Watts. A single Raspberry Pi 3 has a peak performance of 6 \si{GFLOP/s} for a power consumption of only 7 Watts~\cite{Art:RpiClusters}.
-    Embedded systems can take advantage of this increase in efficiency to become more autonomous and not rely on an external computer for heavy computation. We can find this type of architecture on some nano drones such as the CrazyFlie 2.0~\cite{Web:CrazyFlie20}, which can be extended with additional shields. Using a custom shield, the \gls{iis} of \acrshort{eth} achieved to analyze a video signal in real-time and train a neural network for autonomous navigation~\cite{Art:NanoDrone}. The compute unit achieved a rate of 281 \si{MMAC/s} on a power-enveloppe of only 45 \si{mW}.
+    Thanks to the smaller nodes of modern lithography technologies and the transistor density we can achieve with them, modern low-power \glspl{cpu} can have a large amount of cores while keeping their power consumption under a few Watts. A single Raspberry Pi 3 has a peak performance of 6 \si{GFLOP/s} for a power consumption of only 7 W~\cite{Art:RpiClusters}.
+    Embedded systems can take advantage of this increase in efficiency to become more autonomous and not rely on an external computer for heavy computation. We can find this type of architecture on some nano-drones such as the CrazyFlie 2.0~\cite{Web:CrazyFlie20}, which can be extended with additional shields. Using a custom shield, the \gls{iis} of \acrshort{eth} managed to analyze a video signal in real-time and train a neural network for autonomous navigation~\cite{Art:NanoDrone}. The computing unit achieved a rate of 562 \si{MFLOPS/s} on a power-enveloppe of only 45 \si{mW}.
 %% ADD CITATION
 	These results were achieved thanks to the heterogeneous architecture of the drone.
-	To keep it's power consumption low, the dronee wakes-up the \gls{ulp} chip of the shield only during computation. 
- 	The shield use a \gls{pulp} cluster, which is an RISC-V \gls{soc} which can be configured with up to eight cores, this chip provides the computing power needed to analyze the video. 
-	With this configuration, the energy consumption of the CrazyFlie stays low, the autonomy when using the shield only drops by ten seconds compared to when the shield is turned off~\cite{Art:NanoDrones}.
+	To keep its power consumption low, the dronee wakes-up the \gls{ulp} chip of the shield only during computation. 
+ 	The shield use a \gls{pulp} cluster, which is a RISC-V based \gls{soc} which can be configured with up to eight cores, this chip provides the computing power needed to analyze the video. 
+	With this configuration, the energy consumption of the CrazyFlie stays low, the autonomy when using the shield only drops by ten seconds compared to when the shield is turned off~\cite{Art:NanoDrone}.
 
 %% ADD MORE FLOW
 
 	In more general terms, heterogeneous systems are composed of multiple coprocessors all managed by a host processor. This architecture is interesting when it comes to embedded systems, as it is possible to achive greater energy efficiency than homogeneous systems.
 	If each coprocessor has been designed to solve a certain task, it can achieve energy efficiency than a general purpose \gls{cpu}. 
-	According to Venkar and Tullsen~\cite{Art:Harnessing} pusblished by the University of California,  researchers showed that under heavy design constraints (such as die area or therman dissipation), systems using multiple \glspl{isa} achieved better performances than their best homogeneous counterpart.
+	According to Venkar and Tullsen~\cite{Art:Harnessing}, under heavy design constraints (such as die area or therman dissipation), systems using multiple \glspl{isa} achieved better performances than their best homogeneous counterpart.
 
-This strategy has been used in the \gls{soc} industry by ARM since 2011~\cite{Art:bigLITTLE}. The  big.LITTLE architecture is based on two clusters of ARM Cortex A7 (the ``LITTLE''cores) and A15 (the ``big'' cores), and was designed to increase the computing power in low power systems such as smartphones while increasing the battery life of the device. This architecture relied on a single \gls{isa} (ARMv7). The goal was to use the more powerful cores during heavy computation or graphic rendering, and let the low power cores handle the background tasks or manage the device during sleep.
-	Presently, every smartphone \gls{soc} manufacturer use the bigLITTLE architecture or a similar technology.
+This strategy has been used in the \gls{soc} industry by ARM since 2011~\cite{Art:bigLITTLE}. The  big.LITTLE architecture is based on two clusters of ARM Cortex A7 (the ``LITTLE'' cores) and A15 (the ``big'' cores), and was designed to increase the computing power in low-power systems such as smartphones while increasing the battery life of the device. This architecture relied on a single \gls{isa} (ARMv7). The goal was to use the more powerful cores during heavy computation or graphic rendering, and let the low-power cores handle the background tasks or manage the device during sleep.
+	Currently, every smartphone \gls{soc} manufacturer use the big.LITTLE architecture or a similar technology.
 
 
 Even in data centers, where power consumption is also an issue, \glspl{gpu} are used thanks to their massive core count and the various \glspl{api} such as \gls{cuda} or \gls{opencl} which simplify the developement process for \gls{gpu} accelerators.
 
     \gls{hero}~\cite{Art:Hero} is a heterogeneous system developed by the \gls{iis} of \acrshort{eth} and the \gls{eees} of the University of Bologna.
-	This platform is composed of a hard macro ARM 64 \gls{cpu} and up to eight \gls{pulp} clusters (RISC-V cores) running on an Xilinx ZYNC ZC706 \gls{fpga}.
+	This platform is composed of a hard macro ARM 64 \gls{cpu} and up to eight \gls{pulp} clusters running on an Xilinx ZYNC ZC706 \gls{fpga}.
 
-    This platform is designed to ``facilitate rapid exploration on all software and hardware layers''~\cite{Art:Hero}, and includes a heterogeneous compilation toolchain with support for \gls{openmp}, an \gls{api} developed to make developement of multi threaded applications easier~\cite{Web:Wikipedia_OpenMP}. This \gls{api} implements new preprocessor instructions to tell the compiler how to execute the code on the system.
+    This platform is designed to ``facilitate rapid exploration on all software and hardware layers''~\cite{Art:Hero} and includes a heterogeneous compilation toolchain with support for \gls{openmp}, an \gls{api} developed to make developement of multi threaded applications easier~\cite{Web:OpenMPFaq}. This \gls{api} implements new preprocessor instructions to tell the compiler how to execute the code on the system.
 
 
 
 \section {Design Issue with heterogeneous systems}
 
     During their conception, numerous design choices need to be made specifically how the \glspl{cpu} in the system will interact will each other. 
-		These choices will impact the peak performance of the design or its power consumption~\cite{Art:Harnessing}.
+		These choices will impact the peak performance of the design and its power consumption~\cite{Art:Harnessing}.
 		The computer architect has to choose how the different \glspl{pcma} will interact, how they will share data and maybe extend the existing \glspl{isa} to distribute tasks.
     The software design is challenging, when compiling for heterogeneous platforms.
 	The compiler needs to create an executable that will run on the host processor, but also dedicate parts of the final binary to embed the code that will be distributed on the \glspl{pcma}.
 
-	Even though \glspl{api} such as \gls{cuda}, \gls{openmp} or \gls{openmp} did a great job at making the overall developpement easier, most of the work is still done by hand.
-	The programmer has to handle memory mapping, depending on the system architecture, the data may be stored in the shared memory or on the \gls{pcma} memory , every task needs to be scheduled by hand, and distributed on the correct \gls{pcma}. 
-	Moreover, the code is often not portable as some schedule are target dependant.
+	Even though \glspl{api} such as \gls{cuda}, \gls{openmp} or \gls{openmp} did a great job at making the overall developement easier, most of the work is still done by hand.
+	The programmer has to handle memory mapping: depending on the system architecture, the data may be stored in the shared memory or on the \gls{pcma} extra space , and the tasks needs to be scheduled by hand, and distributed on the correct \gls{pcma}. 
+	Moreover, the code is often not portable as some schedule are target-dependant.
 	An algorithm coded with \gls{cuda} will only run on a \gls{gpu}, so the code cannot be reused for another platform.
 	Porting \glspl{api} to new platform is not trivial, and might require months of work to port it to a new target.
 
@@ -57,23 +57,27 @@ Even in data centers, where power consumption is also an issue, \glspl{gpu} are 
 
 
 
-\section {Currently Available Workflow for \acrshort{hero}}
+\section {Currently Available Workflow for HERO}
     Currently, \gls{hero} supports \gls{openmp}~\cite{Report:SoftwareStack}, an \gls{api} which ``defines a portable, scalable model with a simple and flexible interface for developing parallel applications on platforms from the desktop to the supercomputer''~\cite{Web:OpenMp}. 
-	This \gls{api} has been implemented on \gls{hero} to easily take advantage of the \gls{pulp} clusters. The toolchain uses the Clang compiler~\cite{Web:Wikipedia_OpenMP} to compile the applications. \gls{hero} uses custom Clang front-ends to support all the available configurations (only the \gls{pulp} cluster for simulation with the ARM host \gls{cpu} or with a 64 bits RISC-V \gls{cpu}).
+	This \gls{api} has been implemented on \gls{hero} to easily take advantage of the \gls{pulp} clusters. The toolchain uses the Clang compiler~\cite{Web:OpenMPCompilers} to compile the applications. \gls{hero} uses custom Clang front-ends to support all the available configurations (only the \gls{pulp} cluster for simulation with the ARM host \gls{cpu} or with a 64 bits RISC-V \gls{cpu}).
 
     To distribute the code, \gls{openmp} uses preprocessor instructions to tell Clang where the code will run and how it will be executed. Exploring the design space using \gls{openmp}'s directives can be time-consuming. For example, the developer must explicitly tell which part of the code to offload. Trying to change the order of multiple loops may cause bugs in the algorithm, and complex schedules often impact code readability making them harder to debug.
 
     Halide~\cite{Art:Halide} was proposed to explore the idea of separating the algorithm from how the code will be executed on the target (the schedule).
-    This separation makes testing different schedule easier on the developer, as the algorithm code will stay the same, and only the scheduling will be changed when testing.
+    This separation makes testing different schedules easier on the developer, as the algorithm code will stay the same, and only the scheduling will be changed when testing.
     Every processing pipeline designed with Halide has two parts. The first part consists of the functional description of the processing kernel, i.e., the algorithm that will be executed. 
-	The second part is the schedule of the pipeline. The programer will explicitely tell Halide how the pipeline should be executed. Thanks to specific function calls, the developer can decide whether the code will be run on multiple threads or a single one, change the order of execution of different parts, split or unrollthem. The developer alsso has the freedom to implement any schedule he wants but without having to change the main algorithm.
-    This programming model is interesting because the developer can quicky implement the algorithm without having to take into account the boundaries of the inputs, and then work on an optimal schedule, or quickly adapt it if the algorithm need to be executed on another platform.
+	The second part is the schedule of the pipeline. The programer will explicitely tell Halide how the pipeline should be executed. Thanks to specific function calls, the developer can decide whether the code will be run on multiple threads or a single one, change the order of execution of different parts, split or unroll them. The developer also has the freedom to implement any schedule without having to change the main algorithm.
+    This programming model is interesting because the developer can quickly implement the algorithm without having to take into account the boundaries of the inputs, and then work on an optimal schedule, or quickly adapt it if the algorithm needs to be executed on another platform.
 
-    The intermediate variables can be bounded afterwards if needed, and the pricipal variables such as characteristics of the inputs are automatically bounded by Halide. An image processing pipeline will only compute the output on the pixels of the input.
+    The intermediate variables can be bounded afterwards if needed, and the main variables such as characteristics of the inputs are automatically bounded by Halide. An image processing pipeline will only compute the output on the pixels of the input.
     The scheduling process can even be done automatically during the compilation by the library, in order to find an optimal schedule on the target platform.
 
 %%%%%%%%% GOAL OF THE PROJECT
 	The goal of this project was to port Halide to \gls{hero}, and execute image processing kernels on the \gls{hero} system running on an \gls{fpga}. First Halide needs to be compiled to support RISC-V and compile basic applications to the hardware simulation. From then we can work on the heterogeneous compilation to support the current \gls{hero} test platform.
+
+
+%%%%%%%% Organisation of the report
+	This report is organized as follow, beside this introductory section, in Section 2 we discuss about the \gls{hero} platform and the Halide language. In Section 3, we explain how we managed to port Halide to the simulation platform, and the compilation workflow we designed to create Halide applications. Then in Section 4, we benchmark our implementation, and compares it's performance against an already implemented \gls{api}. The last Section concludes the report and outline the next steps to improve the implementation.
 
 %%% Local Variables: 
 %%% mode: latex
