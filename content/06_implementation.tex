@@ -11,97 +11,108 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
 \chapter{Design Implementation}
 
 
 \section { Porting Halide to new targets}
-	Halide programs rely on the \gls{llvm} library to generate compiled code for the desired targets. To build the Halide library, we first need to build \gls{llvm} with the correct flags and add the support for the building machine.
-	As the \gls{hero} toolchain already has a build of this compiler, we can use it to compile Halide, but the \texttt{-DBUILD\_SHARED\_LIBS} flag has to be disabled, as Halide does not support shared libraries.
-	We added a \texttt{make} target to to main \texttt{Makefile} of the project, to simplify the installation process. Once the installation process was complete, we worked on porting Halide to \gls{hero} on the hardware simulator.
+    Halide programs rely on the \gls{llvm} library to generate compiled code for the desired targets. To build the Halide library, we first need to build \gls{llvm} with the correct flags and add the support for the building machine.
+    As the \gls{hero} toolchain already has a build of this compiler, we can use it to compile Halide, but the \texttt{-DBUILD\_SHARED\_LIBS} flag has to be disabled, as Halide does not support shared libraries.
+    We added a \texttt{make} target to to main \texttt{Makefile} of the project, to simplify the installation process.
 
-	%%%%%%%%%%%%%
-	\section{Compilation Workflow}
+    Once the installation process was complete, we worked on porting Halide to \gls{hero} on the hardware simulation.
+    The hardware simulation runs an \gls{rtl} simulation of a \gls{pulp} cluster configured with eight cores. This platform is easier to work on as it does not require any specific hardware (\gls{fpga}) and uses one of the cluster's core as the host of the system.
 
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=.5\textwidth]{./figures_raw/compilationWorkflow.png}
-	\caption{Compilation Workflow for an Halide Application.}
-	\label{fig:compwork}
-\end{figure}
+    %%%%%%%%%%%%%
+    \section{Compilation Workflow}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \dirtree{%
-	.1 halide-examples/.
-	.2 common/.
-	.3 defaultHalide.mk.
-	.2 myApp/.
-	.3 main.c.
-	.3 Makefile.
-	.3 lib/.
-	.4 halidePipeline.cpp.
-	}
-	\caption{Directory structure for Halide applications.}
-	\label{Fig:DirectoryStructure}
+    .1 halide-examples/.
+    .2 common/.
+    .3 defaultHalide.mk.
+    .2 myApp/.
+    .3 main.c.
+    .3 Makefile.
+    .3 lib/.
+    .4 halidePipeline.cpp.
+    }
+    \caption{Directory structure for Halide applications.}
+    \label{Fig:DirectoryStructure}
 \end{figure}
 
 
-	Figure~\ref{fig:compwork} shows the whole compilation process to build a Halide application for \gls{hero}.
-	Every application follows the directory structure described in Figure~\ref{Fig:DirectoryStructure}, the \texttt{common} folder is shared between all the applications and contains a common \texttt{Makefile} that will be included in every application's \texttt{MakeFile}.
 
-	The compilation is done in two steps. First, we compile the Halide pipeline to a RISC-V object file and generate a header file.
-	This header file must be included in the hero application (\texttt{main.c}).
+    Every application follows the directory structure described in Figure~\ref{Fig:DirectoryStructure}, the \texttt{common} folder is shared between all the applications and contains a common \texttt{Makefile} that will be included in every application's \texttt{Makefile}.
+    The source code is split between two files, the pipeline generator in the \texttt{lib/} folder, and the main \gls{hero} application.
+    The pipeline generator uses Halide to generate the pipeline object file which will be used during the compilation of the application.
 
-	The application building process is based on the \gls{openmp} workflow, we follow the same steps until the final linking phase, more information about the whole process can be found in Koen Wolters's report~\cite{Report:SoftwareStack}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=.5\textwidth]{./figures_raw/compilationWorkflow.png}
+    \caption{Compilation Workflow for an Halide Application.}
+    \label{fig:compwork}
+\end{figure}
 
-	We first compile the  source code to \gls{llvm} assembly code. Then due to the heterogeneous nature of the system, a custom program: \texttt{hc-omp-pass} changes every part of the code that may cause issue due to architectural differences between the host and the \gls{pcma} (on \gls{hero}v3, the host is a 64 bits RISC-V processor).
-	In our case, as we only compile for the \gls{pulp} cluster, this step does not affect the code, but it will be useful to support the full \gls{hero} platform. 
-	Then we use the \gls{llvm} assembly files coupled with the pipeline object file to generate the final binary.
+    Figure~\ref{fig:compwork} shows the whole compilation process to build a Halide application for \gls{hero}.
+    The compilation is done in two steps. First, we compile the Halide pipeline into a RISC-V object file and generate a header file.
+    This header file must be included in the \gls{hero} application (\texttt{main.c}).
+    The application building process is based on the \gls{openmp} workflow, we used the same \texttt{Makefile} with some modification to link the pipeline with the main application. 
+
+    We first compile the source code to \gls{llvm} assembly code. Then due to the heterogeneous nature of the system, a custom program: \texttt{hc-omp-pass}, changes every part of the code that may cause issue due to architectural differences between the host and the \gls{pcma} (on \gls{hero}v3, the host is a 64-bit RISC-V processor, and the pointers have to be changed due to the incompatibilities between the 32-bit and 64-bit addressing).
+    In our case, as we only compile for the \gls{pulp} cluster, this step does not affect the code, but it will be useful to support the full \gls{hero} platform. 
+    Then, we use the \gls{llvm} assembly files coupled with the pipeline object file to generate the final binary.
 
 
-	%%%%%%%%%%%%%
-	The header file generated by Halide enumerates every function available on Halide and required to have a fully working Halide implementation. Most of them as not essential and thus do not need to be implemented right away.
-	Halide relies on a small subset of functions and we only need to port them for our examples to run. Hopefully, every function or structure in the pipeline header is documented so we can guess which functions are needed.
-	We implemented the necessary functions in the \gls{pulp} runtime to make the parallel schedule work, as this is the schedule that will take advantage of the high core count of the cluster.
+    The header file generated by Halide declares every function available on Halide and required to have a fully working Halide implementation. 
+    Most of them do not use platform-specific functionalities, and will be compiled to RISC-V without any issue.
+    But others such as memory management functions or thread distribution functions, which uses dedicated functions in the \gls{pulp} runtime have to be overwritten to work on the cluster.
+    Finally, functions that are only called when using the Just in Time compilation or other advanced functionalities, have to be overwritten, but we can keep them as-is for now, as we do not need those functionalities for our pipelines. 
+    The comments in the header precisely describes the role of each function and under which circumstances they have to be overwritten.
+    We implemented the necessary functions in the \gls{pulp} runtime to make the parallel schedule work, as this schedule is essential to take advantage of the high core count of the cluster.
  
 \section{Schedule Implementation }
-	Most of the schedules implemented on halide does not require any platform-specific implementation as they are working on the intermediate representation of the source code, but we still have to modify the \gls{pulp} runtime to overload the memory management functions and define the atomic operations which are specific to RISC-V.
+    Most schedules work out of the box, because they don't need to access any runtime specific function.
+    Halide generates them by altering the source code as operations such as splitting and unrolling are just modification of the loops of the pipeline. 
+    Even the vectorize schedule doesn't need any specific instructions, Halide will rewrite the schedule as if it was manipulating a vector even if the hardware target don't support \gls{simd} instructions. 
+    Memory access and thread task distribution on the cluster have to be overwritten as they use specific runtime functions.
 
-    \subsection{Modification to the \acrshort{pulp} runtime}
+    \subsection{Modification to the PULP runtime}
 
-    The missing halide functions needs to be accessible to the \gls{pulp} runtime, to do so, we created a new file in the kernel (\texttt{halide\_api.c}). 
-    This file contains all the basic functions required to run halide on \gls{hero}.
+    The missing Halide functions need to be accessible to the \gls{pulp} runtime. To do so, we created a new file in the kernel (\texttt{halide\_api.c}). 
+    This file contains all the \gls{api} functions required to run Halide on \gls{hero}.
 
 \begin{lstlisting}[language=C,caption={The \texttt{halide\_do\_par\_for} function.},label={lst:halidedoparfor},captionpos=b]
 int halide_do_par_for(void *user_context,halide_task_t task,
-	int min, int size, uint8_t *closure) {
+    int min, int size, uint8_t *closure) {
 // Mount the cluster
-	rt_cluster_mount(1, 0, 0, NULL);
+    rt_cluster_mount(1, 0, 0, NULL);
 
-	unsigned arguments[4];
-	arguments[0] = (unsigned)user_context;
-	arguments[1] = (unsigned)size;
-	arguments[2] = (unsigned)closure;
-	arguments[3] = (unsigned)task;
+    unsigned arguments[4];
+    arguments[0] = (unsigned)user_context;
+    arguments[1] = (unsigned)size;
+    arguments[2] = (unsigned)closure;
+    arguments[3] = (unsigned)task;
 
-	// Dispatch the task to the cluster
-	rt_team_fork(0, pulp_do_halide_par_for_fork, arguments);
+    // Dispatch the task to the cluster
+    rt_team_fork(0, pulp_do_halide_par_for_fork, arguments);
 
-	// Unmount the cluster
-	rt_cluster_mount(0, 0, 0, NULL);
+    // Unmount the cluster
+    rt_cluster_mount(0, 0, 0, NULL);
 
-	return 0;
+    return 0;
 }
 \end{lstlisting}
 
-	The Listing~\ref{lst:halidedoparfor} shows the full source code of the \texttt{halide\_do\_par\_for} function.
-	This function is called by halide when a parallel schedule is used. Its role is to distribute on task to the cluster.
-	In the first time, \texttt{halide\_do\_par\_for} mount the \gls{pulp} cluster, if the cluster was previously turned off, it is turned back on again.
-	The \texttt{argument} structure describe all the informations about the tasks: \texttt{argument[1]} is the total number of task we are going to execute, \texttt{argument[3]} the pipeline function that will be run.
-	The core have no way of selecting by themself which task they are going to execute, if we distribute directly the pipeline function, they are all going to execute the same functions with the same arguments.
-	To solve this issue we created a wrapper around the pipeline which allow each core to select the tasks based on their core identifier.
 
-	When the execution complete, the cluster is unmounted unsing another \texttt{rt\_cluster\_mount} call.
+    The Listing~\ref{lst:halidedoparfor} shows the full source code of the \texttt{halide\_do\_par\_for} function.
+    %%% distributing on .. confusing
+    This function is called when the pipeline uses the parallel schedule.
+    This function creates the thread pool for the parallel execution of the pipeline. As \gls{hero} does not have a standard way of managing threads, we had to overwrite this function.
+
+    The \texttt{rt\_cluster\_mount} is called to prepare the cluster before distributing the tasks.
+    The \texttt{argument} structure describes all the data about the tasks such as the number of tasks or the function to execute we want to execute.
+    \texttt{rt\_team\_fork} will then create a team of workers which will all execute the same function: \texttt{halide\_do\_par\_for\_fork}.
+
 
 \begin{lstlisting}[language=C,caption={The \texttt{halide\_do\_par\_for\_fork} function.},label={lst:halidedoparforfork},captionpos=b]
 void pulp_do_halide_par_for_fork(void *arg) {
@@ -118,17 +129,9 @@ void pulp_do_halide_par_for_fork(void *arg) {
 
 }
 \end{lstlisting}
-
-
-\iffalse
-	%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\gls{llvm} does not support yet the \gls{pulp} \gls{simd} extension, but the vectorize schedule may still be used, as Halide will reshape the code as if it was manipulating vectors.
-	%%%%%%%%%%%%%%%%%%%%%%%%%%
-\fi
-
-
- %%% WORK ON THE COMPILATION WORKFLOW
-
+    The source code of this function is shown in listing~\ref{lst:halidedoparforfork}, every worker iterates over the task queue, and executes only the task they have been assigned.
+    The assignment is done by comparing the task identifier with the worker's core identifier, if \texttt{core\_id = task\_id \% nb\_cores}, then the task will be executed by the worker. 
+    Finally, once every worker completes, the cluster is turned off.
 
 
 \iffalse

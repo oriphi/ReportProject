@@ -52,7 +52,7 @@ Slide 2:
     ---------
 	 Halide -> GENERAL presentation
 	 	Separt function / processing
-		Only write the pprocessing part once
+		Only write the processing part once
 		Writting schedule made easier.
 
 Slide 3:
