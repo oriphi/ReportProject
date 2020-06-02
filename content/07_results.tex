@@ -12,11 +12,10 @@
 
 \chapter{Results}
 \section{Test Setup}
-%% À changer
-%% CHANGE FIRST LINE %%%%
-	To benchmark Halide, I used a simple matrix multiplication program.
-	We ported the pipeline code from the example in the Halide repository and created the \gls{hero} application around it.
-	We chose to benchmark a matrix multiplication as it is a common workflow in signal processing.
+
+    To benchmark Halide, I used a simple matrix multiplication program.
+    We ported the pipeline code from the example in the Halide repository and created the \gls{hero} application around it.
+    We chose to benchmark a matrix multiplication as it is a common workflow in signal processing.
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
 \begin{lstlisting}[caption={Matrix Multiplication Pipeline.}, captionpos=b, label={code:matmul_pipeline}]
@@ -36,176 +35,129 @@
 
 \end{lstlisting}
 
-	The Listing~\ref{code:matmul_pipeline} shows the full algorithm implementation. We first defined two images parameters: \texttt{A} and \texttt{B}. and initialize the two main variables \texttt{x} and \texttt{y}.
-	Then we create a reduction domain, this object defines a domain over which to iterate.
-	This way we can  easily bound the sum for each coefficient. 
-	Then we compute each coefficient with the function \texttt{matrix\_mul(x,y)}.
-	The mathematical expression for each coefficient is : $c_{i,j} = \sum^{k=n}_{k=0} a_{ik}*b_{kj}$.
-	We can express is quite similarly using Halide, the program will iterate over the variable \texttt{k} repeating the same operation (here a multiplication and accumulation).
-	Then we put the final value inside the output buffer.
-	
-	To have an idea of the performance, we ran a similar application using \gls{openmp}, and compared the total execution time of both applications.
-	To ensure that the results were correct, the output was precomputed and we compared it to the output matrix.
-	For both applications, the matrices were randomly generated and stored inside the L1 cache.
-	The execution time was measured using \texttt{hero\_get\_clk\_counter()} and \texttt{hero\_reset\_clk\_counter()}.
-	These two functions respectively reset a cycle counter and return the counter's value when called. 
-	Both applications were benchmarked on the hardware simulator.
+    The Listing~\ref{code:matmul_pipeline} shows the full algorithm implementation. We first defined two images parameters: \texttt{A} and \texttt{B}. and initialize the two main variables \texttt{x} and \texttt{y}.
+    Then we create a reduction domain, this object defines a domain over which to iterate.
+    This way we can easily bound the sum for each coefficient. 
+    Then we compute each coefficient with the function \texttt{matrix\_mul(x,y)}.
+    The mathematical expression for each coefficient is : $c_{i,j} = \sum^{k=n}_{k=0} a_{ik}*b_{kj}$.
+    We can express is quite similarly using Halide, the program will iterate over the variable \texttt{k} repeating the same operation (here a multiplication and accumulation).
+    Then we put the final value inside the output buffer.
+    
+    To have an idea of the performance, we ran a similar application using \gls{openmp}, and compared the total execution time of both applications.
+    To ensure that the results were correct, the output was precomputed and we compared it to the output matrix.
+    For both applications, the matrices were randomly generated and stored inside the L1 cache.
+    The execution time was measured using \texttt{hero\_get\_clk\_counter()} and \texttt{hero\_reset\_clk\_counter()}.
+    These two functions respectively reset a cycle counter and return the counter's value when called. 
+    Both applications were benchmarked on the hardware simulator.
 \section{Halide Results}
 
 % Table of the values
 \begin{figure}[H]
-		\center
-		\scalebox{.8}{\input{figures_raw/Barplot_Halide.pgf}}
+        \center
+        \scalebox{.8}{\input{figures_raw/Barplot_Halide.pgf}}
     \caption{Halide results relative to Halide base schedule performance.}
-	\label{fig:barPlotHalide}
+    \label{fig:barPlotHalide}
 \end{figure}
 
 
 
 \begin{figure}[H]
-		\center
-	\scalebox{.8}{\input{figures_raw/Roofline_Halide.pgf}}
+        \center
+    \scalebox{.8}{\input{figures_raw/Roofline_Halide.pgf}}
     \caption{Roofline plot for Halide.}
-	\label{fig:rooflineHalide}
+    \label{fig:rooflineHalide}
 \end{figure}
 
 \input{content/BenchmarksHalide.tex}
 
-	The figures~\ref{fig:barPlotHalide} and \ref{fig:rooflineHalide} show the results of Halide for different matrix sizes ranging from 15 to 40.
-	The benchmarks used three different schedule: the default one, with no parallelisation, the parallel schedule along the y axis, and one schedule which combines a parallel schedule with a vectorize one, the third one is a more optimized schedule, we will talk about it in greater detail in section~\nameref{sec:optimization}.
+    The figures~\ref{fig:barPlotHalide} and \ref{fig:rooflineHalide} show the results of Halide for different matrix sizes ranging from 15 to 40.
+    The benchmarks used three different schedules: the default one, with no parallelization, the parallel schedule along the y-axis, and one schedule which combines a parallel schedule with a vectorize one, the third one is a more optimized schedule, we will talk about it in greater detail in section~\nameref{sec:optimization}.
 
-	The bar plot~\ref{fig:barPlotHalide}, compares the gain in  performance for each schedule reelative to the basse Halide schedule. When parallelizing the multiplication, we observe between five and eight times better performances. When the matrix size is a multiple of eight (the number of cores), we get the best scaling possible.
-	This is due to the way Halide handle task distribution, if the number of task is not a multiple of the number of cores, some core will stay inactive waiting for the other to complete their tasks.
-	For example, for a matrix of size twenty-five, during three rounds, every core will compute three coefficients, and the first core will compute four coefficient.
-	So during the last round, only one core will be working, reducing the scaling of the program.
-	If we compute the average number of coefficient computed per round, for a matrix of size twenty-five, we get: $\frac{25}{4}=6.25$.
-	 This average match the increase of performance we observed in our benchmarks.
-	 The parallel schedule works bbest when the number of tasks can be divided by the number of available cores.
+    The bar plot~\ref{fig:barPlotHalide}, compares the gain in performance for each schedule relative to the base Halide schedule. When parallelizing the multiplication, we observe between five and eight times better performances. When the matrix size is a multiple of eight (the number of cores), we get the best scaling possible.
+    This is due to the way Halide handle task distribution, if the number of tasks is not a multiple of the number of cores, some core will stay inactive waiting for the other to complete their tasks.
+    For example, for a matrix of size twenty-five, during three rounds, every core will compute three coefficients, and the first core will compute four coefficients.
+    So during the last round, only one core will be working, reducing the scaling of the program.
+    If we compute the average number of coefficient computed per round, for a matrix of size twenty-five, we get: $\frac{25}{4}=6.25$.
+     This average matches the increase of performance we observed in our benchmarks.
+     The parallel schedule works best when the number of tasks can be divided by the number of available cores.
 
 
-	Figure~\ref{fig:rooflineHalide} shows the performance of Halide compared to an ideal scenario. In this case, an ideal core can achieve one arithmetic operation per cycle (which can be done by a \gls{pulp} cluster as the multiplications can be pipelined).
+    Figure~\ref{fig:rooflineHalide} shows the performance of Halide compared to an ideal scenario. In this case, an ideal core can achieve one arithmetic operation per cycle (which can be done by a \gls{pulp} cluster as the multiplications can be pipelined).
 So the total number of operations needed to complete one matrix multiplication is: $2n^3$.
-	The compute intensity of the program represent the number of operations we execute on each byte. We execute $2n^3$ operations, and  $3n^2$ memory load / write of 32-bit integers, the overall computational intensity of the program is: $\frac{2n^3}{12n^2}=\frac{n}{6}$.
+    The compute intensity of the program represents the number of operations we execute on each byte. We execute $2n^3$ operations, and  $3n^2$ memory load / write of 32-bit integers, the overall computational intensity of the program is: $\frac{2n^3}{12n^2}=\frac{n}{6}$.
 
-	The default schedule performs identically independently of the matrix size, but the preformance of the parallel schedule and the vectorize one increase with the size.
-	This is due to the  overlap in memory access, as every core can read four bytes in the  L1 cache every cycles, by overlapping the requests, we decrease the time loss due to the memory latency.
+    The default schedule performs identically independently of the matrix size, but the performance of the parallel schedule and the vectorize one increase with the size.
+    This is due to the overlap in memory access, as every core can read four bytes in the  L1 cache every cycle, by overlapping the requests, we decrease the time loss due to the memory latency.
 
 
 %%%%%% CHANGE |
 %%%%%%        v
-	
+    
 \section{Comparison with an already working toolchain: \acrshort{openmp}.}
 
 \begin{figure}[H]
-		\center
-	\scalebox{.6}{\input{figures_raw/RooflineHalideOpenMp.pgf}}
+        \center
+    \scalebox{.6}{\input{figures_raw/RooflineHalideOpenMp.pgf}}
     \caption{Roofline plot for Halide}
-	\label{fig:rooflineHalideOpenMP}
+    \label{fig:rooflineHalideOpenMP}
 \end{figure}
 \begin{figure}[H]
-		\center
-		\scalebox{.6}{\input{figures_raw/BarplotHalideOpenMp.pgf}}
+        \center
+        \scalebox{.6}{\input{figures_raw/BarplotHalideOpenMp.pgf}}
     \caption{Halide results relative to Halide base schedule performance.}
-	\label{fig:barPlotHalideOpenMP}
+    \label{fig:barPlotHalideOpenMP}
 \end{figure}
 
 \input{content/BenchmarksHalideOpenMP.tex}
+    
+    Currently, the cluster is handled by \gls{openmp}, we decided to compare both solutions to see how Halide performed against it.
+    Table~\ref{Table:BenchmarksHalideOpenMP} presents the results of both schedules.
+    Both applications perform the same using only a  single core.
+    The execution time difference is less than four thousand cycles on forty by forty matrices ($0.5 \%$ of the total execution time).
 
-As \gls{hero} already have a working workflow to distribute computation on the \gls{pulp} cluster using \gls{openmp}, we can see how Halide compare to this \gls{api} on a simple  parallel schedule.
-	First, we can see that both implementation of the matrix multiplication achieve the same parformance when using only a single core, differing only by less than four thousand cycles for fourty by fourty matrices.
+    On the multithreaded run, Halide managed to outperform \gls{openmp}, achieving 40\% more operations per cycles on thirty by thirty matrices and 35 \% more performance on forty by forty matrices.
+    It seems that \gls{openmp} catch up to Halide on bigger matrices, but we did not test any further as the goal of the project was not to determine which \gls{api} was the best but to see if we could achieve similar performance to  \gls{openmp} with Halide.
 
-	When we parallelize the applications accross all the cores, we can see the  performance gap increasing. On fourty by fourty matrices, Halide achievs almost eight times the performance of the single threaded program, where \gls{openmp} achievs around six times the performance.
-
-	On bigger matrices, Halide seems to scale better than \gls{openmp}. Halide performs worse on some sizes (thirty five and twenty five) because of how the tasks are handled.
-	When the size of the matrices is not a multiple of eight, we don't achieve full core utilization during the last round, reducing the overall performances. 
-	On twenty-five by twenty-five matrices, during the last round, only one core is used, achieving on average $\frac{25}{4} = 6.25$ times the performance of the single core program.
-	
-	On this applicationn, we can see that Halide out performs \gls{openmp}. We then  tried to optimize the schedule to see on this application how Halide performs with a more advanced schedule.
 
 \subsection{Optimizing the schedule of the matrix multiplication}
 \label{sec:optimization}
-	We first compared the performance of every basic schedule except the parallel one to see if they impacted the overall result. Every schedule (unroll, split, tile, fuse) was performing slightly worse than the base one except the vectorize schedule, which had an execution time two or three time smaller than the other ones.
-	This can be explain by data reutilisation, on the split, unroll and tile schedule, if we look at the generated asssembly, the code don't reuse any already loaded coefficient, more over as the program often has more jumps to do, the overall execution time increase.
-	On the other hand, the \texttt{vectorize} schedule loads one coefficient of the first matrix, and a $k$ coefficients of the second one (where $k$ is the vector length specified in the schedule) to compute at the same time $k$ coefficients of the output.
+    We first compared the performance of every basic schedule on twenty by twenty matrices, unsurprisingly,  the parallel schedule performed the best, and the vectorized one was close behind.
+    Every other schedules (unroll, tile, fused, split) performed slightly worse than the base schedule because they all added additional computations or additional jumps.
+    The vectorize schedule performed twice as good as the default schedule even though \gls{llvm} do not support the \gls{pulp} \gls{simd} extension.
+    This jump in performance is due to data reutilisation.
+    On the split, unroll, and tile schedule, if we look at the generated assembly, the code does not reuse any already loaded coefficient, every value loaded from the cache is used only once.
+    Moreover, splitting the code introduce even more loops, which may take more time to execute due to the jump instructions.
 
-	To see which vector length was the best, We exhaustively tried every vector length possible on twenty by twenty matrices. The schedule used to obtain the results shown by Figure~\ref{Fig:Vectorization}, are achieved using this schedule: \texttt{out.parallel(y).vectorize(x,k);}, where \texttt{k} is the vector length.
-
-\begin{figure}[H]
-	\begin{center}
-	\resizebox{10cm}{!}{\input{figures_raw/Vectorize.pgf}}
-	\label{Fig:Vectorization}
-		\caption{Impact of the vectorization factor on the performance of the application.}
-	\end{center}
-\end{figure}
-
-	Figure~\ref{Fig:Vectorization} shows that increasing the vector length too much only decrease the overall performance, this is due to the limited amount of registers. As RISC-V \glspl{cpu} have 32 registers, and some of them have dedicated functionnalities, we can't use all of them.
-	So when we increase the vector length, at one point, there are no available registers to store intermediate computations, and the compiler is forced to store these intermediate values in the caches, which take some  cycles.
-	On RISC-V \glspl{cpu}, the sweetspot seems to be a vector length of eight.
-
-
-%%%%%%%%%%%%%%% SEE IF VALID TEXT AFFTER
-
-
-
-
-
-\section{Comparaison between \acrshort{openmp} and Halide on the different platforms}
-
-
-
-	Halide base schedule performs similarly from \gls{openmp} single threaded, differing only by a few thousands cycles for the last test (with two matrices of size 35 by 35).
-	The two implementation are prettty similar, and Halide overhead is in this case almost negligeable.
-
-	The second schedule I tested on both \glspl{api} was the parallel schedule; as parallelisation is the most efficient way to increase performance especially when there is no data dependancy in the pipeline. To have the best possible performance, the \gls{api} needs to be as small as possible.
-
-	The table~\ref{Table:Benchmarks} show the results of both applications, with every size tested, we can see that Halide is in every situation at least $.2$ operations per cycle faster than \gls{openmp}.
-
-%	To represent  the code efficiency, I used the number of useful operations per cycles. As we have eight core at our disposal, capable at most of one operation per cycle, we can achieve at best eight operations per cycle. The graph~\ref{fig:roofline}, represent the performance of the schedule relative to the computing intensity of the program (The number of operations required to output one byte of data). The computational intensity for a matrix of size n is $C_n = \frac{2n^3}{12n^2} = \frac{n}{6}$ where $2n^3$ is the number of operations, and $12n^2$ is the number of byte needed to complete the operation on 32 bits integers.
-
-%	On the  graph~\ref{fig:roofline}, we can see that Halide with it's parallel schedule achieves better results than OpenMP on all the sizes tested( from fifteen by fifteen up to thirty five by thirty five). The gaps in performance stays between $.2$ operations per cycles and $.4$ operations per cycles depending on the size of the matrices.
-
-
-I also tried multiple schedule for Halide to see the best performance \gls{hero} could achieve on this benchmark. I tried to combine the parallel schedule with loop unrolling or tiling, but I was only getting worse results due to the additional jumps or the additional computation implied by loop unrolling. When the unrolling factor is not a divisor of the number of loop iteration, Halide shift the final iteration to always compute the same number of element each iteration. This shift forces the pipeline to recompute some output values.
+    On the other hand, the \texttt{vectorize} schedule loads one coefficient of the first matrix, and a $k$ coefficients of the second one (where $k$ is the vector length specified when programming the schedule) to compute at the same time $k$ coefficients of the output.
+    To compute $k$ coefficient, we will do $n(k+1)$ memory load, with $k$ memory store.
+    We can compute all the coefficients in: $\frac{n^2}{k}$ iterations, and $n^3\frac{k+1}{k} + n^2 \approx n^3 + n^2$ memory load (instead of: $n^2.(2n+1)=2n^3 + n^2$ memory operations).
+    But we can't increase $k$ as much as we want as we only have a limited amount of registers available.
+    To see which vector length was the best, We exhaustively tried every vector length possible on twenty by twenty matrices. The schedule used to obtain the results shown by Figure~\ref{Fig:Vectorization}, are achieved using the schedule described in Listing~\ref{code:goodSchedule}
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,tabsize=2}
-\begin{lstlisting}[caption={Schedule using Parallel and Vectorize}, captionpos=b, label={code:good_schedule}]
-	out.parallel(y);
-	out.vectorize(x, 10);
+
+\begin{lstlisting}[caption={Schedule using Parallel and Vectorize}, captionpos=b, label={code:goodSchedule}]
+    out.parallel(y);
+    out.vectorize(x, k);
 
 \end{lstlisting}
 
-	The vectorize schedule used with parallel proves to be the most efficient solution, on twenty by twenty matrices, the parallel schedule alone achieved $1.026$ operations per cycle, against $2.169$ operations per cycle using the schedule~\ref{code:good_schedule}.
-	I then exhaustively tried every vectorization factor possible to see which performed best.
+\begin{figure}[H]
+    \begin{center}
+    \resizebox{10cm}{!}{\input{figures_raw/Vectorize.pgf}}
+    \label{Fig:Vectorization}
+        \caption{Impact of the vectorization factor on the performance of the application.}
+        \label{fig:Vectorization}
+    \end{center}
+\end{figure}
+
+    We can see on Figure~\ref{fig:Vectorization}, that the execution time starts around 9000 cycles for a vector length of two, and decrease to 7300 cycles for a vector length of eight.
+    When the vector length becomes too large, the execution time increases again, because we only have a few registers to work with, and Halide is forced to store some values into the cache when the length is too large.
 
 
-%0_paraYVect_2/modelsimLog:   11619 Cycles
-%1_paraYVect_3/modelsimLog:   10433 Cycles
-%2_paraYVect_4/modelsimLog:   9240  Cycles
-%3_paraYVect_5/modelsimLog:   8358  Cycles
-%4_paraYVect_6/modelsimLog:   9333  Cycles
-%5_paraYVect_7/modelsimLog:   8012  Cycles
-%6_paraYVect_8/modelsimLog:   8442  Cycles
-%7_paraYVect_9/modelsimLog:   9151  Cycles
-%8_paraYVect_10/modelsimLog:  7376  Cycles
-%9_paraYVect_11/modelsimLog:  7829  Cycles
-%10_paraYVect_12/modelsimLog: 8049  Cycles
-%11_paraYVect_13/modelsimLog: 10202 Cycles
-%12_paraYVect_14/modelsimLog: 11387 Cycles
-%13_paraYVect_15/modelsimLog: 12755 Cycles
-%14_paraYVect_16/modelsimLog: 13894 Cycles
-%15_paraYVect_17/modelsimLog: 15551 Cycles
-%16_paraYVect_18/modelsimLog: 18007 Cycles
-%17_paraYVect_19/modelsimLog: 18358 Cycles
+    If we compare our optimized schedule with the two other schedules tested, we get a significant jump in performance.
+    In Figure~\ref{fig:BarPlotHalide} we can see a difference in performance ranging form ten times to twenty times the single thread performance of Halide.
+    And compared to the multithreaded application, the gains are still significant, as we achieve between $0.5$ more operations per cycle up to $2.125$ more operations per cycle.
 
 
-
-
-
-
-%- Tried differents schedule to get better performances:
-%        - parallel X, Y
-%        - unrolling, tiling, and combination of both, but always worse performances
-%- Best schedule to date (20 x 20 matrices):
-%    - parallel over Y (15 595 cycles 1.0259 OPC)
-%    - parallel over Y + vectorize X (10) (7376 cycles 2.169 OPC)
-%
+    This may not be the most optimal schedule, and for even bigger matrices, more optimal solutions may be found, but the process to get to this schedule was rudimentary, and without having to change the algorithm, it is really easy to experiment with different schedules and come up with one that performs better.
