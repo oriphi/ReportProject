@@ -136,7 +136,8 @@ void pulp_do_halide_par_for_fork(void *arg) {
 \end{lstlisting}
     The source code of this function is shown in listing~\ref{lst:halidedoparforfork}, every worker iterates over the task queue, and executes only the task they have been assigned.
     The assignment is done by comparing the task identifier with the worker's core identifier, if \texttt{core\_id = task\_id \% nb\_cores}, then the task will be executed by the worker. 
-    Finally, once every worker completes, the cluster is turned off.
+	The first core then wait for all workers to complete before shutting turning off the cluster and continuing the excution of the application.
+
 
 %% Pros and cons of such a distribution scheme
     

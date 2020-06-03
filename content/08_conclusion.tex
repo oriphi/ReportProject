@@ -9,25 +9,37 @@
 %%%%%                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \chapter{Conclusion}
 
 
 \section{Conclusion}
-The goal of the project was to port Halide, an image processing language on \gls{hero}, and run image processing kernel on the test hardware.
-Some functions were missing on the \gls{pulp} runtime, so we first added them to the source code. 
-Then we added the Halide source to the \gls{hero} project and built the library. The compiling options of \gls{llvm} needed to be changed to sucessfully compile Halide.
-Using the Makefile of the \gls{openmp} applications as a base, I sucessfully compiled Halide applications to run on the \gls{rtl} simulator.
-I then tested two applications a gradient and a matrix multiplication to debug the schedules and test if they were working correctly.
-After that, I ran some benchmarks on different matrix sizes to compare the perfromance of Halide and \gls{openmp} to determine whether Halide could compete with \gls{openmp} or not.
-I then tried to make the heterogeneous compilation work on the \gls{hero} platform with the ARM host but I did not have enough time make it work. I slightly changed the \gls{llvm} target to include other object file during linking. But in the end I did not have enough time to make it work on the hardware platform.
 
-Even if I could not finish the project, on the \gls{rtl} simulator, Halide showed promising results, but it need to be benchmarked more thoroughly to have a better idea of the performances Halide can achieve.
+    The goal of the project was to port Halide, an image processing language on \gls{hero}, and test the language on the hardware simulator.
+    We first added Halide to the \gls{hero} repository and automated the build process with the already available tools, then we worked on porting Halide.
+    The porting process was not straight forward as some modifications had to be done on the \gls{pulp} runtime.
+    The compilation process of \gls{openmp} application had to be changed to enable Halide support.
+    We then tested the implementation with a simple matrix multiplication kernel.
+    We ran the same application on \gls{openmp} to compare the performance of both implementation on this particular workload.
+    The results were on par with \gls{openmp}, and with some optimizations, it is possible to find a more optimized schedule easily.
+    \Gls{openmp} will still outperform Halide in most of the workflow, as Halide was designed in the first place for image processing.
+
+    During this project, Halide showed promising results, with its ease of programming and the performance of the code.
+    A port of Halide on the full \gls{hero} platform would definitely be interesting for signal processing applications on the \gls{hero} platform.
 
 \section{Future Work}
-A lot of work needs to be done to merge Halide on the main branch of \gls{hero}, The heterogeneous workflow for Halide needs to be fixed as it is  impossible right now to distribute code to the \gls{pulp} cluster from the ARM cluster. 
-The \gls{ci} is currently not working, which is probably due to the change of options when compiling \gls{llvm}, this may also cause compability issues with \gls{openmp} or other components of the toolchain. This branch requires in depth testing before being merged with the main project.
 
+    \subsection{Cleaning}
+        Currently, Halide is being ported on another branch and has not been tested, before merging the implementation with the main branch, further testing needs to be done to guarantee that the modified build of \gls{llvm} did not break any other toolchains.
+        The branch requires in-depth testing before merging it to the main repository.
 
+    \subsection{Porting Halide to the full platform}
 
+    As an extension of the project, we tried to port Halide on the hardware platform.
+    We tried two different approaches, one using the code exporting feature of Halide and the second one using the distribution instructions of \gls{openmp}.
+    For the first method, we exported the pipeline into a C file and tried to import it in our application.
+    This method didn't work as some part of the generated code use C++ and not C.
+    Some headers are absent from the \gls{hero} SDK, so using this method require further investigation to determine which header are missing and why.
+    The second method was to keep the pipeline as an object file, but adding a \texttt{  \#pragma omp target device(BIGPULP\_MEMCPY)} instruction before the pipeline call.
+    Then the goal was to link the precompiled object file during compilation and create a heterogeneous application.
+    But we did not have enough time to figure out how to compile heterogeneous applications using Halide.
 
